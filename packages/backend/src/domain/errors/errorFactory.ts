@@ -39,4 +39,34 @@ export const Errors = {
 
   internal: (message: string = 'Internal server error') =>
     new BusinessError(message, 'INTERNAL_ERROR', 500),
+
+  oauthProviderNotSupported: (provider: string) =>
+    new BusinessError(
+      `OAuth provider '${provider}' is not supported`,
+      'OAUTH_PROVIDER_NOT_SUPPORTED',
+      400
+    ),
+
+  oauthAccountAlreadyLinked: () =>
+    new BusinessError(
+      'This OAuth account is already linked to another user',
+      'OAUTH_ALREADY_LINKED',
+      409
+    ),
+
+  oauthAccountNotFound: () =>
+    new BusinessError('OAuth account not found', 'OAUTH_NOT_FOUND', 404),
+
+  cannotUnlinkLastAuth: () =>
+    new BusinessError(
+      'Cannot unlink the last authentication method. Add password or another OAuth provider first.',
+      'CANNOT_UNLINK_LAST_AUTH',
+      400
+    ),
+
+  oauthStateInvalid: () =>
+    new BusinessError('Invalid or expired OAuth state', 'OAUTH_STATE_INVALID', 400),
+
+  oauthCallbackError: (message: string) =>
+    new BusinessError(`OAuth callback error: ${message}`, 'OAUTH_CALLBACK_ERROR', 400),
 };

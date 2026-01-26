@@ -18,3 +18,11 @@ enum AnalyticsEventType {
   walkthrough_skipped
   chat_message
 }
+
+enum OAuthProvider {
+  google
+  facebook
+  telegram
+  github
+  apple
+}

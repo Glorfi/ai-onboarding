@@ -1,7 +1,7 @@
 export interface IUser {
   id: string;
-  email: string;
-  passwordHash: string;
+  email: string | null;
+  passwordHash: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -9,11 +9,11 @@ export interface IUser {
 export type IUserPublic = Omit<IUser, 'passwordHash'>;
 
 export interface ICreateUserData {
-  email: string;
-  passwordHash: string;
+  email?: string | null;
+  passwordHash?: string | null;
 }
 
 export interface IUpdateUserData {
-  email?: string;
-  passwordHash?: string;
+  email?: string | null;
+  passwordHash?: string | null;
 }

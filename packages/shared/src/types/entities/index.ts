@@ -1,4 +1,5 @@
 export * from './User';
+export * from './OAuthAccount';
 export * from './Site';
 export * from './ApiKey';
 export * from './WalkthroughStep';

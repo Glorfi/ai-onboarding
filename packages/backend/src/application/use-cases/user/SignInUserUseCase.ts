@@ -23,7 +23,7 @@ export class SignInUserUseCase {
     const validated = signInInputSchema.parse(input);
 
     const user = await this.userRepo.findByEmail(validated.email);
-    if (!user) {
+    if (!user || !user.passwordHash) {
       throw Errors.invalidCredentials();
     }
 

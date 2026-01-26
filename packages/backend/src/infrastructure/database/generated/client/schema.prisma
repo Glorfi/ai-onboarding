@@ -72,6 +72,14 @@ enum AnalyticsEventType {
   chat_message
 }
 
+enum OAuthProvider {
+  google
+  facebook
+  telegram
+  github
+  apple
+}
+
 model KnowledgeBase {
   id        String   @id @default(uuid())
   siteId    String   @map("site_id")
@@ -84,6 +92,24 @@ model KnowledgeBase {
   site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
   @@map("knowledge_bases")
+}
+
+model OAuthAccount {
+  id                String        @id @default(uuid())
+  userId            String        @map("user_id")
+  provider          OAuthProvider
+  providerAccountId String        @map("provider_account_id")
+  email             String?
+  displayName       String?       @map("display_name")
+  avatarUrl         String?       @map("avatar_url")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("oauth_accounts")
 }
 
 generator client {
@@ -119,12 +145,13 @@ model Site {
 
 model User {
   id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
+  email        String?  @unique
+  passwordHash String?  @map("password_hash")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  sites Site[]
+  sites         Site[]
+  oauthAccounts OAuthAccount[]
 
   @@map("users")
 }
