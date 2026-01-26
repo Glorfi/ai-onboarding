@@ -1,224 +1,160 @@
-# TypeScript Backend - Clean Architecture Guide
+# TypeScript Clean Architecture - AI Agent Guide
 
-> **Purpose**: AI-optimized reference for TypeScript backend development with Clean Architecture
-> **Stack**: TypeScript, Express, MongoDB, TSyringe DI
-> **Last Updated**: 2025-01-15
+> **Stack**: TypeScript, Express, Prisma, TSyringe DI
+> **Last Updated**: 2025-01-26
 
----
+## Architecture Layers
 
-## 1. Quick Reference
-
-**Architecture Pattern**: Clean Architecture (Domain-Driven Design)
-
-**Layer Hierarchy**:
 ```
 Interfaces → Application → Domain ← Infrastructure
-   (HTTP)      (Use Cases)  (Business)  (MongoDB, External)
+   (HTTP)    (Use Cases)  (Business)  (Prisma/OAuth)
 ```
 
-**Key Commands**:
-```bash
-npm run dev          # ts-node-dev (development)
-npm run build        # tsc + tsc-alias (production)
-npm run typecheck    # tsc --noEmit
-```
+**Dependency Rules**:
+- ✅ Outer → Inner dependencies only
+- ✅ Infrastructure implements Domain interfaces
+- ❌ Domain never depends on outer layers
 
-**Project Structure**:
+---
+
+## File Structure
+
 ```
 src/
-├── application/use-cases/    # Orchestration logic
-├── domain/                   # Business logic, entities, interfaces
-├── infrastructure/           # External implementations (DB, HTTP)
-├── interfaces/controllers/   # HTTP request handlers
-├── shared/config.ts          # Application constants
-├── di-container.ts           # Dependency injection setup
-└── index.ts                  # App entry point
+├── application/use-cases/        # Orchestration
+│   └── {domain}/{Action}UseCase.ts
+├── domain/
+│   ├── models/                   # Interfaces (from shared package)
+│   ├── repositories/             # I{Entity}Repository interfaces
+│   ├── services/                 # Reusable business logic
+│   └── errors/errorFactory.ts    # BusinessError, Errors.*
+├── infrastructure/
+│   ├── database/
+│   │   ├── prisma.ts            # Prisma client
+│   │   └── repositories/         # Prisma{Entity}Repository
+│   ├── http/
+│   │   ├── app.ts
+│   │   ├── routes/
+│   │   └── middlewares/
+│   └── oauth/                    # OAuth providers
+├── interfaces/controllers/       # HTTP handlers
+├── di-container.ts              # DI registration
+└── index.ts                     # Entry point
 ```
 
 ---
 
-## 2. Clean Architecture Layers
+## Quick Patterns
 
-### Layer Diagram
+### 1. Use Case Pattern
+
+```typescript
+// application/use-cases/user/RegisterUserUseCase.ts
+import { injectable, inject } from 'tsyringe';
+import { IUserRepository } from '@/domain/repositories';
+import { PasswordService } from '@/domain/services';
+import { Errors } from '@/domain/errors';
+import { registerInputSchema, IRegisterInput } from '@ai-onboarding/shared';
+
+@injectable()
+export class RegisterUserUseCase {
+  constructor(
+    @inject('IUserRepository') private userRepo: IUserRepository,
+    @inject('PasswordService') private passwordService: PasswordService
+  ) {}
+
+  async execute(input: IRegisterInput): Promise<IRegisterUserOutput> {
+    // 1. Validate input
+    const validated = registerInputSchema.parse(input);
+
+    // 2. Check business rules
+    const existing = await this.userRepo.findByEmail(validated.email);
+    if (existing) throw Errors.emailAlreadyExists();
+
+    // 3. Process business logic
+    const passwordHash = await this.passwordService.hash(validated.password);
+
+    // 4. Persist data
+    const user = await this.userRepo.create({
+      email: validated.email,
+      passwordHash,
+    });
+
+    // 5. Return result
+    const { passwordHash: _, ...userPublic } = user;
+    return { user: userPublic };
+  }
+}
 ```
-┌─────────────────────────────────────────────────────────┐
-│  INTERFACES (Entry Points)                              │
-│  • HTTP Controllers, CLI handlers, GraphQL resolvers    │
-│  • Dependency: Application layer                        │
-└──────────────────┬────────────────────────────────────┘
-                   │ depends on ↓
-┌──────────────────┴────────────────────────────────────┐
-│  APPLICATION (Use Cases)                                │
-│  • Business workflows, orchestration                    │
-│  • Dependency: Domain interfaces                        │
-└──────────────────┬────────────────────────────────────┘
-                   │ depends on ↓
-┌──────────────────┴────────────────────────────────────┐
-│  DOMAIN (Core Business Logic)                           │
-│  • Entities, Models, Repository Interfaces              │
-│  • Services, Errors, Value Objects                      │
-│  • No external dependencies                             │
-└──────────────────┬────────────────────────────────────┘
-                   ↑ implemented by
-┌──────────────────┴────────────────────────────────────┐
-│  INFRASTRUCTURE (Technical Details)                     │
-│  • MongoDB repositories, HTTP setup                     │
-│  • External APIs, File system, Message queues           │
-│  • Implements Domain interfaces                         │
-└─────────────────────────────────────────────────────────┘
-```
 
-### Dependency Rules
-
-**✅ Allowed**:
-- Outer layers depend on inner layers
-- All layers depend on Domain
-- Infrastructure implements Domain interfaces
-
-**❌ Forbidden**:
-- Domain depends on outer layers
-- Inner layers import from outer layers
-- Direct database access from Use Cases
+**Use Case Rules**:
+- One `execute()` method
+- Inject dependencies via constructor
+- Validate at start (Zod from shared)
+- Throw `Errors.*` for violations
+- No try-catch (let errors bubble)
+- Return domain models
 
 ---
 
-## 3. Domain Layer
-
-### 3.1 Models (Interfaces)
-
-**Location**: `domain/models/{Entity}.ts`
-
-**Purpose**: Define data structures without implementation
+### 2. Repository Interface
 
 ```typescript
-// domain/models/User.ts
-export interface IUser {
-  _id?: string;
-  email: string;
-  passwordHash: string;
-  role: 'user' | 'admin';
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-// domain/models/Product.ts
-export interface IProduct {
-  _id?: string;
-  name: string;
-  price: number;
-  stock: number;
-  categoryId: string;
-  isActive: boolean;
-}
-```
-
-**Best Practices**:
-- Optional `_id` (created by DB)
-- Optional timestamps (handled by DB)
-- Use TypeScript enums for fixed values
-- Keep interfaces flat (no nested logic)
-
-### 3.2 Entities (Business Logic)
-
-**Location**: `domain/entities/{Entity}Entity.ts`
-
-**Purpose**: Encapsulate business rules and validation
-
-```typescript
-// domain/entities/ProductEntity.ts
-import { IProduct } from '../models/Product';
-
-export class ProductEntity implements IProduct {
-  _id?: string;
-  name: string;
-  price: number;
-  stock: number;
-  categoryId: string;
-  isActive: boolean;
-
-  constructor(data: IProduct) {
-    this._id = data._id;
-    this.name = data.name;
-    this.price = data.price;
-    this.stock = data.stock;
-    this.categoryId = data.categoryId;
-    this.isActive = data.isActive;
-  }
-
-  // Business logic methods
-  public canBePurchased(quantity: number): boolean {
-    return this.isActive && this.stock >= quantity;
-  }
-
-  public applyDiscount(percentage: number): number {
-    if (percentage < 0 || percentage > 1) {
-      throw new Error('Invalid discount percentage');
-    }
-    return this.price * (1 - percentage);
-  }
-
-  public reduceStock(quantity: number): void {
-    if (!this.canBePurchased(quantity)) {
-      throw new Error('Insufficient stock or inactive product');
-    }
-    this.stock -= quantity;
-  }
-
-  // Private helpers
-  private calculateTax(): number {
-    return this.price * 0.2; // 20% tax
-  }
-}
-```
-
-**Pattern**:
-- Constructor maps all interface fields
-- Public methods for business operations
-- Private methods for internal calculations
-- Throw errors for invalid states
-- No database access (pure business logic)
-
-### 3.3 Repository Interfaces
-
-**Location**: `domain/repositories/{Entity}Repository.ts`
-
-**Purpose**: Define data access contracts (implemented by Infrastructure)
-
-```typescript
-// domain/repositories/UserRepository.ts
-import { IUser } from '../models/User';
+// domain/repositories/IUserRepository.ts
+import { IUser, ICreateUserData, IUpdateUserData } from '../models';
 
 export interface IUserRepository {
   findById(id: string): Promise<IUser | null>;
   findByEmail(email: string): Promise<IUser | null>;
-  create(user: Partial<IUser>): Promise<IUser>;
-  update(id: string, patch: Partial<IUser>): Promise<IUser>;
+  create(data: ICreateUserData): Promise<IUser>;
+  update(id: string, data: IUpdateUserData): Promise<IUser>;
   delete(id: string): Promise<boolean>;
-  findAll(filter?: Record<string, any>): Promise<IUser[]>;
-}
-
-// domain/repositories/ProductRepository.ts
-export interface IProductRepository {
-  findById(id: string): Promise<IProduct | null>;
-  findByCategory(categoryId: string): Promise<IProduct[]>;
-  create(product: Partial<IProduct>): Promise<IProduct>;
-  update(id: string, patch: Partial<IProduct>): Promise<IProduct>;
-  delete(id: string): Promise<boolean>;
-  search(query: string): Promise<IProduct[]>;
 }
 ```
 
-**Naming Convention**:
-- `I{Entity}Repository` interface
-- Methods: `findBy*`, `create`, `update`, `delete`
-- Return `Promise<T | null>` for single entities
-- Return `Promise<T[]>` for collections
+---
 
-### 3.4 Services
+### 3. Prisma Repository
 
-**Location**: `domain/services/{Service}.ts`
+```typescript
+// infrastructure/database/repositories/PrismaUserRepository.ts
+import { injectable } from 'tsyringe';
+import { IUserRepository } from '@/domain/repositories';
+import { IUser, ICreateUserData, IUpdateUserData } from '@/domain/models';
+import { prisma } from '../prisma';
 
-**Purpose**: Reusable business logic shared across use cases
+@injectable()
+export class PrismaUserRepository implements IUserRepository {
+  async findById(id: string): Promise<IUser | null> {
+    return prisma.user.findUnique({ where: { id } });
+  }
+
+  async findByEmail(email: string): Promise<IUser | null> {
+    return prisma.user.findUnique({ where: { email } });
+  }
+
+  async create(data: ICreateUserData): Promise<IUser> {
+    return prisma.user.create({ data });
+  }
+
+  async update(id: string, data: IUpdateUserData): Promise<IUser> {
+    return prisma.user.update({ where: { id }, data });
+  }
+
+  async delete(id: string): Promise<boolean> {
+    try {
+      await prisma.user.delete({ where: { id } });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+```
+
+---
+
+### 4. Domain Service
 
 ```typescript
 // domain/services/PasswordService.ts
@@ -227,7 +163,7 @@ import { injectable } from 'tsyringe';
 
 @injectable()
 export class PasswordService {
-  private readonly saltRounds = 10;
+  private readonly saltRounds = 12;
 
   async hash(password: string): Promise<string> {
     return bcrypt.hash(password, this.saltRounds);
@@ -236,56 +172,18 @@ export class PasswordService {
   async compare(password: string, hash: string): Promise<boolean> {
     return bcrypt.compare(password, hash);
   }
-
-  validate(password: string): boolean {
-    // Min 8 chars, 1 uppercase, 1 lowercase, 1 number
-    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-    return regex.test(password);
-  }
-}
-
-// domain/services/JwtService.ts
-import * as jwt from 'jsonwebtoken';
-
-@injectable()
-export class JwtService {
-  generateAccessToken(userId: string): string {
-    return jwt.sign(
-      { userId },
-      process.env.JWT_ACCESS_SECRET!,
-      { expiresIn: '1d' }
-    );
-  }
-
-  generateRefreshToken(userId: string): string {
-    return jwt.sign(
-      { userId },
-      process.env.JWT_REFRESH_SECRET!,
-      { expiresIn: '14d' }
-    );
-  }
-
-  verifyAccessToken(token: string): { userId: string } {
-    return jwt.verify(token, process.env.JWT_ACCESS_SECRET!) as { userId: string };
-  }
-
-  verifyRefreshToken(token: string): { userId: string } {
-    return jwt.verify(token, process.env.JWT_REFRESH_SECRET!) as { userId: string };
-  }
 }
 ```
 
-**Best Practices**:
-- Use `@injectable()` decorator for DI
-- No repository dependencies (pure logic)
-- Reusable across multiple use cases
+**Service Rules**:
+- Use `@injectable()` decorator
+- No repository dependencies
 - Stateless (no instance variables)
+- Reusable across use cases
 
-### 3.5 Error Handling
+---
 
-**Location**: `domain/errors/errorFactory.ts`
-
-**Purpose**: Centralized business error creation
+### 5. Error Factory
 
 ```typescript
 // domain/errors/errorFactory.ts
@@ -301,445 +199,71 @@ export class BusinessError extends Error {
 }
 
 export const Errors = {
-  // 400 Bad Request
   validation: (msg: string) =>
     new BusinessError(msg, 'VALIDATION_ERROR', 400),
-
-  // 401 Unauthorized
+  
   unauthorized: (msg: string = 'Unauthorized') =>
     new BusinessError(msg, 'UNAUTHORIZED', 401),
-
-  // 403 Forbidden
+  
   forbidden: (msg: string = 'Forbidden') =>
     new BusinessError(msg, 'FORBIDDEN', 403),
-
-  // 404 Not Found
+  
   notFound: (entity: string) =>
     new BusinessError(`${entity} not found`, 'NOT_FOUND', 404),
-
-  // 409 Conflict
+  
   conflict: (msg: string) =>
     new BusinessError(msg, 'CONFLICT', 409),
-
-  // 422 Unprocessable Entity
-  invalidOperation: (msg: string) =>
-    new BusinessError(msg, 'INVALID_OPERATION', 422),
-
-  // 429 Too Many Requests
-  limitExceeded: (msg: string) =>
-    new BusinessError(msg, 'LIMIT_EXCEEDED', 429),
+  
+  emailAlreadyExists: () =>
+    new BusinessError('User with this email already exists', 'EMAIL_EXISTS', 409),
 };
 ```
 
-**Usage in Use Cases**:
-```typescript
-// Throw business errors
-if (!user) throw Errors.notFound('User');
-if (user.email === newEmail) throw Errors.conflict('Email already in use');
-if (!passwordService.validate(password)) {
-  throw Errors.validation('Password must be at least 8 characters');
-}
-```
-
 ---
 
-## 4. Application Layer (Use Cases)
-
-### 4.1 Use Case Pattern
-
-**Location**: `application/use-cases/{domain}/{Action}{Entity}UseCase.ts`
-
-**Structure**:
-```typescript
-// application/use-cases/user/RegisterUserUseCase.ts
-import { injectable, inject } from 'tsyringe';
-import { IUserRepository } from '@/domain/repositories/UserRepository';
-import { PasswordService } from '@/domain/services/PasswordService';
-import { IUser } from '@/domain/models/User';
-import { Errors } from '@/domain/errors/errorFactory';
-
-export interface IRegisterUserInput {
-  email: string;
-  password: string;
-  role?: 'user' | 'admin';
-}
-
-@injectable()
-export class RegisterUserUseCase {
-  constructor(
-    @inject('IUserRepository') private userRepo: IUserRepository,
-    @inject('PasswordService') private passwordService: PasswordService
-  ) {}
-
-  async execute(input: IRegisterUserInput): Promise<IUser> {
-    // 1. Validate input
-    if (!input.email || !input.password) {
-      throw Errors.validation('Email and password are required');
-    }
-
-    if (!this.passwordService.validate(input.password)) {
-      throw Errors.validation('Password must be at least 8 characters');
-    }
-
-    // 2. Check business rules
-    const existing = await this.userRepo.findByEmail(input.email);
-    if (existing) {
-      throw Errors.conflict('User with this email already exists');
-    }
-
-    // 3. Process business logic
-    const passwordHash = await this.passwordService.hash(input.password);
-
-    // 4. Persist data
-    const user = await this.userRepo.create({
-      email: input.email,
-      passwordHash,
-      role: input.role || 'user',
-    });
-
-    return user;
-  }
-}
-```
-
-### 4.2 Use Case Examples
-
-**Create Entity**:
-```typescript
-// application/use-cases/product/CreateProductUseCase.ts
-@injectable()
-export class CreateProductUseCase {
-  constructor(
-    @inject('IProductRepository') private productRepo: IProductRepository,
-    @inject('ICategoryRepository') private categoryRepo: ICategoryRepository
-  ) {}
-
-  async execute(input: ICreateProductInput): Promise<IProduct> {
-    // Validate category exists
-    const category = await this.categoryRepo.findById(input.categoryId);
-    if (!category) throw Errors.notFound('Category');
-
-    // Validate price
-    if (input.price <= 0) {
-      throw Errors.validation('Price must be positive');
-    }
-
-    return this.productRepo.create({
-      name: input.name,
-      price: input.price,
-      stock: input.stock || 0,
-      categoryId: input.categoryId,
-      isActive: true,
-    });
-  }
-}
-```
-
-**Update Entity**:
-```typescript
-// application/use-cases/product/UpdateProductUseCase.ts
-@injectable()
-export class UpdateProductUseCase {
-  constructor(
-    @inject('IProductRepository') private productRepo: IProductRepository
-  ) {}
-
-  async execute(id: string, patch: Partial<IProduct>): Promise<IProduct> {
-    const product = await this.productRepo.findById(id);
-    if (!product) throw Errors.notFound('Product');
-
-    // Business validation
-    if (patch.price !== undefined && patch.price <= 0) {
-      throw Errors.validation('Price must be positive');
-    }
-
-    return this.productRepo.update(id, patch);
-  }
-}
-```
-
-**Complex Business Logic**:
-```typescript
-// application/use-cases/order/PlaceOrderUseCase.ts
-@injectable()
-export class PlaceOrderUseCase {
-  constructor(
-    @inject('IOrderRepository') private orderRepo: IOrderRepository,
-    @inject('IProductRepository') private productRepo: IProductRepository,
-    @inject('IUserRepository') private userRepo: IUserRepository
-  ) {}
-
-  async execute(input: IPlaceOrderInput): Promise<IOrder> {
-    // 1. Validate user
-    const user = await this.userRepo.findById(input.userId);
-    if (!user) throw Errors.notFound('User');
-
-    // 2. Validate products and stock
-    const products = await Promise.all(
-      input.items.map(item => this.productRepo.findById(item.productId))
-    );
-
-    for (let i = 0; i < products.length; i++) {
-      const product = products[i];
-      const item = input.items[i];
-
-      if (!product) throw Errors.notFound('Product');
-
-      const entity = new ProductEntity(product);
-      if (!entity.canBePurchased(item.quantity)) {
-        throw Errors.invalidOperation(
-          `Insufficient stock for ${product.name}`
-        );
-      }
-    }
-
-    // 3. Calculate total
-    const total = input.items.reduce((sum, item, i) => {
-      return sum + products[i]!.price * item.quantity;
-    }, 0);
-
-    // 4. Create order
-    const order = await this.orderRepo.create({
-      userId: input.userId,
-      items: input.items,
-      total,
-      status: 'pending',
-    });
-
-    // 5. Update stock
-    for (let i = 0; i < products.length; i++) {
-      const product = products[i]!;
-      const entity = new ProductEntity(product);
-      entity.reduceStock(input.items[i].quantity);
-
-      await this.productRepo.update(product._id!, {
-        stock: entity.stock,
-      });
-    }
-
-    return order;
-  }
-}
-```
-
-### 4.3 Use Case Best Practices
-
-**DO**:
-- ✅ One public `execute()` method per use case
-- ✅ Inject dependencies via constructor
-- ✅ Validate input at the start
-- ✅ Throw BusinessError for violations
-- ✅ Use entities for complex business logic
-- ✅ Return domain models (not DTOs)
-
-**DON'T**:
-- ❌ Access database directly (use repositories)
-- ❌ Handle HTTP concerns (status codes, headers)
-- ❌ Catch errors (let them bubble up)
-- ❌ Have multiple public methods
-- ❌ Store state in use case instances
-
----
-
-## 5. Infrastructure Layer
-
-### 5.1 MongoDB Repository Implementation
-
-**Location**: `infrastructure/mongodb/Mongo{Entity}Repository.ts`
-
-**Pattern**:
-```typescript
-// infrastructure/mongodb/MongoUserRepository.ts
-import { injectable, inject } from 'tsyringe';
-import { Connection, Model, Types } from 'mongoose';
-import { IUserRepository } from '@/domain/repositories/UserRepository';
-import { IUser } from '@/domain/models/User';
-import { UserSchema } from './schemas/UserSchema';
-
-@injectable()
-export class MongoUserRepository implements IUserRepository {
-  private model: Model<IUser>;
-
-  constructor(@inject('MongoConnection') private connection: Connection) {
-    this.model = connection.model<IUser>('User', UserSchema);
-  }
-
-  async findById(id: string): Promise<IUser | null> {
-    if (!Types.ObjectId.isValid(id)) return null;
-    return this.model.findById(id).lean().exec();
-  }
-
-  async findByEmail(email: string): Promise<IUser | null> {
-    return this.model.findOne({ email }).lean().exec();
-  }
-
-  async create(user: Partial<IUser>): Promise<IUser> {
-    const doc = await this.model.create(user);
-    return doc.toObject();
-  }
-
-  async update(id: string, patch: Partial<IUser>): Promise<IUser> {
-    const doc = await this.model
-      .findByIdAndUpdate(id, patch, { new: true })
-      .lean()
-      .exec();
-
-    if (!doc) throw new Error('User not found');
-    return doc;
-  }
-
-  async delete(id: string): Promise<boolean> {
-    const result = await this.model.findByIdAndDelete(id).exec();
-    return !!result;
-  }
-
-  async findAll(filter: Record<string, any> = {}): Promise<IUser[]> {
-    return this.model.find(filter).lean().exec();
-  }
-}
-```
-
-**Critical Patterns**:
-- Always use `.lean()` for plain objects (performance)
-- Validate ObjectId before queries
-- Use `{ new: true }` for updates to return updated doc
-- Throw errors on required operations (update, delete)
-- Return `null` for optional operations (findById)
-
-### 5.2 Mongoose Schemas
-
-**Location**: `infrastructure/mongodb/schemas/{Entity}Schema.ts`
-
-```typescript
-// infrastructure/mongodb/schemas/UserSchema.ts
-import { Schema } from 'mongoose';
-import { IUser } from '@/domain/models/User';
-
-export const UserSchema = new Schema<IUser>(
-  {
-    email: { type: String, required: true, unique: true },
-    passwordHash: { type: String, required: true },
-    role: { type: String, enum: ['user', 'admin'], default: 'user' },
-  },
-  {
-    timestamps: true,
-    collection: 'users',
-  }
-);
-
-// Indexes
-UserSchema.index({ email: 1 });
-
-// infrastructure/mongodb/schemas/ProductSchema.ts
-export const ProductSchema = new Schema<IProduct>(
-  {
-    name: { type: String, required: true },
-    price: { type: Number, required: true, min: 0 },
-    stock: { type: Number, default: 0, min: 0 },
-    categoryId: { type: Schema.Types.ObjectId, required: true, ref: 'Category' },
-    isActive: { type: Boolean, default: true },
-  },
-  {
-    timestamps: true,
-    collection: 'products',
-  }
-);
-
-// Indexes
-ProductSchema.index({ categoryId: 1 });
-ProductSchema.index({ name: 'text' }); // For text search
-```
-
-**Best Practices**:
-- Enable `timestamps: true` (auto createdAt/updatedAt)
-- Set explicit `collection` name
-- Add indexes for frequently queried fields
-- Use `ref` for relationships
-- Set `min/max` for number validation
-
-### 5.3 Database Connection
-
-**Location**: `infrastructure/mongodb/connector.ts`
-
-```typescript
-// infrastructure/mongodb/connector.ts
-import mongoose, { Connection } from 'mongoose';
-
-export class MongoDBConnection {
-  private static instance: Connection | null = null;
-
-  static async connect(uri: string): Promise<Connection> {
-    if (this.instance) return this.instance;
-
-    try {
-      await mongoose.connect(uri);
-      this.instance = mongoose.connection;
-      console.log('✅ MongoDB connected');
-      return this.instance;
-    } catch (error) {
-      console.error('❌ MongoDB connection failed:', error);
-      throw error;
-    }
-  }
-
-  static async disconnect(): Promise<void> {
-    if (this.instance) {
-      await mongoose.disconnect();
-      this.instance = null;
-      console.log('🔌 MongoDB disconnected');
-    }
-  }
-}
-```
-
----
-
-## 6. Interfaces Layer (HTTP)
-
-### 6.1 Controller Pattern
-
-**Location**: `interfaces/controllers/{Entity}Controller.ts`
+### 6. Controller Pattern
 
 ```typescript
 // interfaces/controllers/UserController.ts
 import { Request, Response, NextFunction } from 'express';
 import { container } from 'tsyringe';
-import { RegisterUserUseCase } from '@/application/use-cases/user/RegisterUserUseCase';
-import { SignInUserUseCase } from '@/application/use-cases/user/SignInUserUseCase';
+import { RegisterUserUseCase } from '@/application/use-cases';
+import { JwtService } from '@/domain/services';
 
 export class UserController {
   static async register(req: Request, res: Response, next: NextFunction) {
     try {
       const useCase = container.resolve(RegisterUserUseCase);
-      const user = await useCase.execute(req.body);
-
-      // Don't send passwordHash to client
-      const { passwordHash, ...userDto } = user;
-
-      res.status(201).json(userDto);
+      const result = await useCase.execute(req.body);
+      
+      res.status(201).json(result);
     } catch (error) {
-      next(error); // Pass to error handler middleware
+      next(error);
     }
   }
 
   static async signIn(req: Request, res: Response, next: NextFunction) {
     try {
       const useCase = container.resolve(SignInUserUseCase);
+      const jwtService = container.resolve(JwtService);
       const result = await useCase.execute(req.body);
 
-      res.status(200).json(result);
-    } catch (error) {
-      next(error);
-    }
-  }
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+      };
 
-  static async getById(req: Request, res: Response, next: NextFunction) {
-    try {
-      const useCase = container.resolve(GetUserByIdUseCase);
-      const user = await useCase.execute(req.params.id);
-
-      const { passwordHash, ...userDto } = user;
-      res.status(200).json(userDto);
+      res
+        .cookie('accessToken', result.accessToken, {
+          ...cookieOptions,
+          maxAge: jwtService.getTokenMaxAge('access'),
+        })
+        .cookie('refreshToken', result.refreshToken, {
+          ...cookieOptions,
+          maxAge: jwtService.getTokenMaxAge('refresh'),
+        })
+        .json(result);
     } catch (error) {
       next(error);
     }
@@ -747,167 +271,185 @@ export class UserController {
 }
 ```
 
-**Pattern**:
-- Static methods (no instance state)
-- Resolve use case from DI container
-- Call `useCase.execute()` with input
-- Send JSON response
-- Pass errors to `next()` middleware
+**Controller Rules**:
+- Static methods only
+- Resolve use case from container
+- Call `execute()` with request data
+- Pass errors to `next()`
 
-### 6.2 Routes
+---
 
-**Location**: `infrastructure/http/routes/{entity}.ts`
+### 7. Routes
 
 ```typescript
-// infrastructure/http/routes/users.ts
+// infrastructure/http/routes/auth.ts
 import { Router } from 'express';
 import { UserController } from '@/interfaces/controllers/UserController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import { authMiddleware } from '../middlewares';
 
 const router = Router();
 
-// Public routes
-router.post('/register', UserController.register);
-router.post('/sign-in', UserController.signIn);
-
-// Protected routes
-router.get('/:id', authMiddleware, UserController.getById);
-router.put('/:id', authMiddleware, UserController.update);
-router.delete('/:id', authMiddleware, UserController.delete);
+router.post('/signup', UserController.register);
+router.post('/signin', UserController.signIn);
+router.get('/profile', authMiddleware, UserController.getProfile);
 
 export default router;
 ```
 
-### 6.3 Authentication Middleware
+---
 
-**Location**: `infrastructure/http/middlewares/authMiddleware.ts`
+### 8. Auth Middleware
 
 ```typescript
 // infrastructure/http/middlewares/authMiddleware.ts
 import { Request, Response, NextFunction } from 'express';
 import { container } from 'tsyringe';
-import { JwtService } from '@/domain/services/JwtService';
+import { JwtService } from '@/domain/services';
 
-export interface AuthRequest extends Request {
+export interface IAuthRequest extends Request {
   userId?: string;
 }
 
 export function authMiddleware(
-  req: AuthRequest,
+  req: IAuthRequest,
   res: Response,
   next: NextFunction
-) {
+): void {
   try {
     const jwtService = container.resolve(JwtService);
-
-    // Try Bearer token first
+    
     let token = req.headers.authorization?.split(' ')[1];
-
-    // Fallback to cookie
+    if (!token) token = req.cookies?.accessToken;
+    
     if (!token) {
-      token = req.cookies?.accessToken;
-    }
-
-    if (!token) {
-      return res.status(401).json({
-        message: 'Access token not provided',
-        code: 'UNAUTHORIZED',
-      });
+      res.status(401).json({ message: 'Token not provided', code: 'UNAUTHORIZED' });
+      return;
     }
 
     const payload = jwtService.verifyAccessToken(token);
     req.userId = payload.userId;
-
     next();
   } catch (error) {
-    return res.status(401).json({
-      message: 'Invalid or expired token',
-      code: 'UNAUTHORIZED',
-    });
+    res.status(401).json({ message: 'Invalid token', code: 'UNAUTHORIZED' });
   }
 }
 ```
 
-### 6.4 Error Handler Middleware
+---
 
-**Location**: `infrastructure/http/middlewares/errorHandler.ts`
+### 9. Error Handler
 
 ```typescript
 // infrastructure/http/middlewares/errorHandler.ts
 import { Request, Response, NextFunction } from 'express';
-import { BusinessError } from '@/domain/errors/errorFactory';
+import { ZodError } from 'zod';
+import { BusinessError } from '@/domain/errors';
 
 export function errorHandler(
   err: Error,
   req: Request,
   res: Response,
   next: NextFunction
-) {
-  // Business errors (known errors)
+): void {
   if (err instanceof BusinessError) {
-    return res.status(err.statusCode).json({
+    res.status(err.statusCode).json({
       message: err.message,
       code: err.code,
     });
+    return;
   }
 
-  // Mongoose validation errors
-  if (err.name === 'ValidationError') {
-    return res.status(400).json({
-      message: err.message,
+  if (err instanceof ZodError) {
+    res.status(400).json({
+      message: 'Validation failed',
       code: 'VALIDATION_ERROR',
+      errors: err.errors.map(e => ({
+        field: e.path.join('.'),
+        message: e.message,
+      })),
     });
+    return;
   }
 
-  // JWT errors
-  if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
-    return res.status(401).json({
-      message: 'Invalid or expired token',
-      code: 'UNAUTHORIZED',
-    });
-  }
-
-  // Unknown errors
   console.error('Unexpected error:', err);
-  return res.status(500).json({
-    message: 'Internal Server Error',
+  res.status(500).json({
+    message: 'Internal server error',
     code: 'INTERNAL_ERROR',
   });
 }
 ```
 
-### 6.5 Express App Setup
+---
 
-**Location**: `infrastructure/http/app.ts`
+### 10. DI Container
+
+```typescript
+// di-container.ts
+import 'reflect-metadata';
+import { container } from 'tsyringe';
+import {
+  PrismaUserRepository,
+  PrismaOAuthAccountRepository,
+} from './infrastructure/database/repositories';
+import { PasswordService, JwtService } from './domain/services';
+import {
+  OAuthProviderRegistry,
+  OAuthStateService,
+  OAuthService,
+  GoogleOAuthProvider,
+} from './infrastructure/oauth';
+
+export function initDI() {
+  // Repositories
+  container.register('IUserRepository', { useClass: PrismaUserRepository });
+  container.register('IOAuthAccountRepository', { useClass: PrismaOAuthAccountRepository });
+
+  // Services
+  container.registerSingleton('PasswordService', PasswordService);
+  container.registerSingleton('JwtService', JwtService);
+
+  // OAuth
+  container.registerSingleton('OAuthStateService', OAuthStateService);
+  container.registerSingleton('OAuthProviderRegistry', OAuthProviderRegistry);
+  container.registerSingleton('OAuthService', OAuthService);
+
+  // Register OAuth providers
+  const registry = container.resolve<OAuthProviderRegistry>('OAuthProviderRegistry');
+  if (process.env.GOOGLE_CLIENT_ID) {
+    registry.registerProvider(new GoogleOAuthProvider());
+  }
+
+  console.log('✅ DI initialized');
+}
+```
+
+---
+
+### 11. Express App Setup
 
 ```typescript
 // infrastructure/http/app.ts
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import { errorHandler } from './middlewares/errorHandler';
-
-// Routes
-import userRoutes from './routes/users';
-import productRoutes from './routes/products';
+import { errorHandler } from './middlewares';
+import apiRoutes from './routes';
 
 export function createApp() {
   const app = express();
 
-  // Middlewares
-  app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
+  app.use(helmet());
+  app.use(cors({ credentials: true }));
   app.use(express.json());
   app.use(cookieParser());
 
-  // Routes
-  app.use('/api/users', userRoutes);
-  app.use('/api/products', productRoutes);
+  app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+  });
 
-  // Health check
-  app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
-
-  // Error handler (must be last)
-  app.use(errorHandler);
+  app.use('/api', apiRoutes);
+  app.use(errorHandler); // Must be last
 
   return app;
 }
@@ -915,77 +457,23 @@ export function createApp() {
 
 ---
 
-## 7. Dependency Injection Setup
-
-### 7.1 DI Container
-
-**Location**: `di-container.ts`
-
-```typescript
-// di-container.ts
-import 'reflect-metadata';
-import { container } from 'tsyringe';
-import { MongoDBConnection } from './infrastructure/mongodb/connector';
-
-// Repository implementations
-import { MongoUserRepository } from './infrastructure/mongodb/MongoUserRepository';
-import { MongoProductRepository } from './infrastructure/mongodb/MongoProductRepository';
-
-export async function initDI() {
-  // 1. Connect to MongoDB
-  const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/myapp';
-  const connection = await MongoDBConnection.connect(mongoUri);
-
-  // 2. Register MongoDB connection
-  container.registerInstance('MongoConnection', connection);
-
-  // 3. Register repositories (Interface → Implementation)
-  container.register('IUserRepository', {
-    useClass: MongoUserRepository,
-  });
-  container.register('IProductRepository', {
-    useClass: MongoProductRepository,
-  });
-
-  // 4. Register services (Class → Class, auto-injectable)
-  // Services with @injectable() are auto-registered when resolved
-
-  console.log('✅ Dependency Injection initialized');
-}
-```
-
-**Registration Patterns**:
-```typescript
-// Interface token → Implementation
-container.register('IRepository', { useClass: MongoRepository });
-
-// Singleton service
-container.registerSingleton('ServiceName', ServiceClass);
-
-// Instance (for external connections)
-container.registerInstance('TokenName', instance);
-```
-
-### 7.2 App Entry Point
-
-**Location**: `index.ts`
+### 12. Entry Point
 
 ```typescript
 // index.ts
 import 'dotenv/config';
 import { initDI } from './di-container';
 import { createApp } from './infrastructure/http/app';
+import { connectDatabase } from './infrastructure/database';
 
 async function bootstrap() {
   try {
-    // 1. Initialize DI
-    await initDI();
+    initDI();
+    await connectDatabase();
 
-    // 2. Create Express app
     const app = createApp();
-
-    // 3. Start server
     const PORT = process.env.PORT || 3000;
+
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
@@ -1000,541 +488,180 @@ bootstrap();
 
 ---
 
-## 8. Authentication Flow
+## OAuth Pattern
 
-### 8.1 Sign In Use Case
+### OAuth Provider Interface
 
 ```typescript
-// application/use-cases/user/SignInUserUseCase.ts
-import { injectable, inject } from 'tsyringe';
-import { IUserRepository } from '@/domain/repositories/UserRepository';
-import { PasswordService } from '@/domain/services/PasswordService';
-import { JwtService } from '@/domain/services/JwtService';
-import { Errors } from '@/domain/errors/errorFactory';
-
-export interface ISignInInput {
-  email: string;
-  password: string;
-}
-
-export interface ISignInOutput {
+// domain/services/oauth/IOAuthProvider.ts
+export interface IOAuthTokens {
   accessToken: string;
-  refreshToken: string;
-  user: {
-    _id: string;
-    email: string;
-    role: string;
-  };
+  refreshToken?: string;
+  expiresIn?: number;
 }
+
+export interface IOAuthProvider {
+  readonly provider: OAuthProvider;
+  getAuthorizationUrl(state: string, redirectUri: string): string;
+  exchangeCodeForTokens(code: string, redirectUri: string): Promise<IOAuthTokens>;
+  getUserProfile(accessToken: string): Promise<IOAuthUserProfile>;
+}
+```
+
+### OAuth Provider Implementation
+
+```typescript
+// infrastructure/oauth/providers/GoogleOAuthProvider.ts
+import { injectable } from 'tsyringe';
+import { IOAuthProvider } from '@/domain/services/oauth/IOAuthProvider';
+import { OAuthProvider } from '@ai-onboarding/shared';
 
 @injectable()
-export class SignInUserUseCase {
-  constructor(
-    @inject('IUserRepository') private userRepo: IUserRepository,
-    @inject('PasswordService') private passwordService: PasswordService,
-    @inject('JwtService') private jwtService: JwtService
-  ) {}
+export class GoogleOAuthProvider implements IOAuthProvider {
+  readonly provider = OAuthProvider.GOOGLE;
+  
+  private readonly clientId = process.env.GOOGLE_CLIENT_ID!;
+  private readonly clientSecret = process.env.GOOGLE_CLIENT_SECRET!;
 
-  async execute(input: ISignInInput): Promise<ISignInOutput> {
-    // 1. Find user
-    const user = await this.userRepo.findByEmail(input.email);
-    if (!user) {
-      throw Errors.unauthorized('Invalid email or password');
-    }
+  getAuthorizationUrl(state: string, redirectUri: string): string {
+    const params = new URLSearchParams({
+      client_id: this.clientId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'openid email profile',
+      state,
+      access_type: 'offline',
+    });
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+  }
 
-    // 2. Verify password
-    const isValid = await this.passwordService.compare(
-      input.password,
-      user.passwordHash
-    );
-    if (!isValid) {
-      throw Errors.unauthorized('Invalid email or password');
-    }
+  async exchangeCodeForTokens(code: string, redirectUri: string): Promise<IOAuthTokens> {
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: this.clientId,
+        client_secret: this.clientSecret,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: redirectUri,
+      }),
+    });
 
-    // 3. Generate tokens
-    const accessToken = this.jwtService.generateAccessToken(user._id!);
-    const refreshToken = this.jwtService.generateRefreshToken(user._id!);
-
+    if (!response.ok) throw new Error('Failed to exchange code');
+    const data = await response.json();
+    
     return {
-      accessToken,
-      refreshToken,
-      user: {
-        _id: user._id!,
-        email: user.email,
-        role: user.role,
-      },
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
+      expiresIn: data.expires_in,
+    };
+  }
+
+  async getUserProfile(accessToken: string): Promise<IOAuthUserProfile> {
+    const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch profile');
+    const data = await response.json();
+    
+    return {
+      providerAccountId: data.id,
+      email: data.email || null,
+      displayName: data.name || null,
+      avatarUrl: data.picture || null,
     };
   }
 }
 ```
 
-### 8.2 Token Refresh Use Case
+---
 
-```typescript
-// application/use-cases/user/RefreshTokensUseCase.ts
-@injectable()
-export class RefreshTokensUseCase {
-  constructor(
-    @inject('IUserRepository') private userRepo: IUserRepository,
-    @inject('JwtService') private jwtService: JwtService
-  ) {}
+## Key Rules
 
-  async execute(refreshToken: string): Promise<{ accessToken: string }> {
-    // 1. Verify refresh token
-    let payload: { userId: string };
-    try {
-      payload = this.jwtService.verifyRefreshToken(refreshToken);
-    } catch (error) {
-      throw Errors.unauthorized('Invalid refresh token');
-    }
+### DO ✅
+- Validate input at use case start (Zod from shared)
+- Throw `Errors.*` for business violations
+- Use `@injectable()` for DI classes
+- Repository interfaces in domain
+- Models/types from shared package
+- Static controller methods
+- Pass errors to `next()` in controllers
 
-    // 2. Check user still exists
-    const user = await this.userRepo.findById(payload.userId);
-    if (!user) {
-      throw Errors.unauthorized('User not found');
-    }
-
-    // 3. Generate new access token
-    const accessToken = this.jwtService.generateAccessToken(user._id!);
-
-    return { accessToken };
-  }
-}
-```
+### DON'T ❌
+- Access database from use cases (use repositories)
+- Handle HTTP in use cases (status codes, cookies)
+- Catch errors in use cases (let bubble to errorHandler)
+- Store state in use case/controller instances
+- Import from outer layers in domain
+- Create models in backend (use shared package)
 
 ---
 
-## 9. Validation
+## Common Patterns
 
-### 9.1 Input Validation Pattern
-
-**Option 1: Manual Validation**
+### Pagination
 ```typescript
-// application/use-cases/product/CreateProductUseCase.ts
-async execute(input: ICreateProductInput): Promise<IProduct> {
-  // Manual validation
-  if (!input.name || input.name.trim().length === 0) {
-    throw Errors.validation('Product name is required');
-  }
-
-  if (input.price <= 0) {
-    throw Errors.validation('Price must be positive');
-  }
-
-  if (input.stock < 0) {
-    throw Errors.validation('Stock cannot be negative');
-  }
-
-  // ... rest of use case
-}
-```
-
-**Option 2: Zod Schema Validation**
-```typescript
-// application/use-cases/product/CreateProductUseCase.ts
-import { z } from 'zod';
-
-const CreateProductSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
-  price: z.number().positive('Price must be positive'),
-  stock: z.number().int().nonnegative('Stock cannot be negative'),
-  categoryId: z.string().min(1, 'Category is required'),
-});
-
-@injectable()
-export class CreateProductUseCase {
-  async execute(input: ICreateProductInput): Promise<IProduct> {
-    // Validate with Zod
-    const validated = CreateProductSchema.parse(input); // Throws if invalid
-
-    // ... rest of use case
-  }
-}
-```
-
-### 9.2 Validation Middleware (Optional)
-
-```typescript
-// infrastructure/http/middlewares/validateRequest.ts
-import { Request, Response, NextFunction } from 'express';
-import { ZodSchema } from 'zod';
-
-export function validateRequest(schema: ZodSchema) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    try {
-      schema.parse(req.body);
-      next();
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          message: 'Validation failed',
-          errors: error.errors,
-          code: 'VALIDATION_ERROR',
-        });
-      }
-      next(error);
-    }
-  };
-}
-
-// Usage in routes
-router.post(
-  '/products',
-  validateRequest(CreateProductSchema),
-  ProductController.create
-);
-```
-
----
-
-## 10. Common Patterns
-
-### 10.1 Pagination
-
-```typescript
-// domain/models/Pagination.ts
-export interface IPaginationParams {
-  page: number;
-  limit: number;
-}
-
-export interface IPaginatedResult<T> {
+interface IPaginationParams { page: number; limit: number; }
+interface IPaginatedResult<T> {
   data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
-
-// domain/repositories/ProductRepository.ts
-export interface IProductRepository {
-  findPaginated(
-    filter: Record<string, any>,
-    pagination: IPaginationParams
-  ): Promise<IPaginatedResult<IProduct>>;
-}
-
-// infrastructure/mongodb/MongoProductRepository.ts
-async findPaginated(
-  filter: Record<string, any>,
-  pagination: IPaginationParams
-): Promise<IPaginatedResult<IProduct>> {
-  const { page, limit } = pagination;
-  const skip = (page - 1) * limit;
-
-  const [data, total] = await Promise.all([
-    this.model.find(filter).skip(skip).limit(limit).lean().exec(),
-    this.model.countDocuments(filter).exec(),
-  ]);
-
-  return {
-    data,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
+  pagination: { page: number; limit: number; total: number; totalPages: number; };
 }
 ```
 
-### 10.2 Soft Delete
-
+### Transaction (Prisma)
 ```typescript
-// domain/models/User.ts
-export interface IUser {
-  _id?: string;
-  email: string;
-  passwordHash: string;
-  isDeleted: boolean;
-  deletedAt?: Date;
-}
-
-// infrastructure/mongodb/MongoUserRepository.ts
-async delete(id: string): Promise<boolean> {
-  const result = await this.model
-    .findByIdAndUpdate(id, {
-      isDeleted: true,
-      deletedAt: new Date(),
-    })
-    .exec();
-
-  return !!result;
-}
-
-async findById(id: string): Promise<IUser | null> {
-  return this.model.findOne({ _id: id, isDeleted: false }).lean().exec();
-}
-```
-
-### 10.3 Transactions
-
-```typescript
-// application/use-cases/order/PlaceOrderUseCase.ts
-import { ClientSession } from 'mongoose';
-
-@injectable()
-export class PlaceOrderUseCase {
-  constructor(
-    @inject('IOrderRepository') private orderRepo: IOrderRepository,
-    @inject('IProductRepository') private productRepo: IProductRepository,
-    @inject('MongoConnection') private connection: Connection
-  ) {}
-
-  async execute(input: IPlaceOrderInput): Promise<IOrder> {
-    const session: ClientSession = await this.connection.startSession();
-
-    try {
-      session.startTransaction();
-
-      // 1. Create order (within transaction)
-      const order = await this.orderRepo.create(
-        { ...orderData },
-        { session }
-      );
-
-      // 2. Update stock (within transaction)
-      await this.productRepo.update(
-        productId,
-        { stock: newStock },
-        { session }
-      );
-
-      await session.commitTransaction();
-      return order;
-    } catch (error) {
-      await session.abortTransaction();
-      throw error;
-    } finally {
-      session.endSession();
-    }
-  }
-}
+await prisma.$transaction(async (tx) => {
+  const order = await tx.order.create({ data: orderData });
+  await tx.product.update({ where: { id }, data: { stock: newStock } });
+  return order;
+});
 ```
 
 ---
 
-## 11. File Organization Reference
+## Environment Variables
 
-```
-project-root/
-├── src/
-│   ├── application/
-│   │   └── use-cases/
-│   │       ├── user/
-│   │       │   ├── RegisterUserUseCase.ts
-│   │       │   ├── SignInUserUseCase.ts
-│   │       │   └── RefreshTokensUseCase.ts
-│   │       └── product/
-│   │           ├── CreateProductUseCase.ts
-│   │           ├── UpdateProductUseCase.ts
-│   │           └── DeleteProductUseCase.ts
-│   │
-│   ├── domain/
-│   │   ├── entities/
-│   │   │   ├── UserEntity.ts
-│   │   │   └── ProductEntity.ts
-│   │   ├── models/
-│   │   │   ├── User.ts
-│   │   │   ├── Product.ts
-│   │   │   └── Pagination.ts
-│   │   ├── repositories/
-│   │   │   ├── UserRepository.ts
-│   │   │   └── ProductRepository.ts
-│   │   ├── services/
-│   │   │   ├── PasswordService.ts
-│   │   │   └── JwtService.ts
-│   │   └── errors/
-│   │       └── errorFactory.ts
-│   │
-│   ├── infrastructure/
-│   │   ├── http/
-│   │   │   ├── app.ts
-│   │   │   ├── routes/
-│   │   │   │   ├── users.ts
-│   │   │   │   └── products.ts
-│   │   │   └── middlewares/
-│   │   │       ├── authMiddleware.ts
-│   │   │       ├── errorHandler.ts
-│   │   │       └── validateRequest.ts
-│   │   └── mongodb/
-│   │       ├── connector.ts
-│   │       ├── MongoUserRepository.ts
-│   │       ├── MongoProductRepository.ts
-│   │       └── schemas/
-│   │           ├── UserSchema.ts
-│   │           └── ProductSchema.ts
-│   │
-│   ├── interfaces/
-│   │   └── controllers/
-│   │       ├── UserController.ts
-│   │       └── ProductController.ts
-│   │
-│   ├── shared/
-│   │   └── config.ts
-│   │
-│   ├── di-container.ts
-│   └── index.ts
-│
-├── .env
-├── .gitignore
-├── package.json
-├── tsconfig.json
-└── README.md
-```
-
----
-
-## 12. TypeScript Configuration
-
-**tsconfig.json**:
-```json
-{
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "lib": ["ES2020"],
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "moduleResolution": "node",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    }
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
-}
-```
-
-**package.json scripts**:
-```json
-{
-  "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/index.ts",
-    "build": "tsc && tsc-alias",
-    "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "mongoose": "^8.0.0",
-    "tsyringe": "^4.8.0",
-    "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
-    "dotenv": "^16.3.1",
-    "cors": "^2.8.5",
-    "cookie-parser": "^1.4.6",
-    "zod": "^3.22.4"
-  },
-  "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/node": "^20.10.0",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.5",
-    "@types/cors": "^2.8.17",
-    "@types/cookie-parser": "^1.4.6",
-    "typescript": "^5.3.3",
-    "ts-node-dev": "^2.0.0",
-    "tsconfig-paths": "^4.2.0",
-    "tsc-alias": "^1.8.8",
-    "reflect-metadata": "^0.2.1"
-  }
-}
-```
-
----
-
-## 13. Environment Variables
-
-**.env**:
 ```env
-# Server
-PORT=3000
 NODE_ENV=development
-
-# Database
-MONGO_URI=mongodb://127.0.0.1:27017/myapp
-
-# JWT
-JWT_ACCESS_SECRET=your-access-secret-key-here
-JWT_REFRESH_SECRET=your-refresh-secret-key-here
-
-# CORS
-FRONTEND_URL=http://localhost:3060
+PORT=3000
+DATABASE_URL=postgresql://user:pass@localhost:5432/db
+JWT_ACCESS_SECRET=your-secret
+JWT_REFRESH_SECRET=your-secret
+ACCESS_TOKEN_EXPIRES_IN=7d
+REFRESH_TOKEN_EXPIRES_IN=14d
+FRONTEND_URL=http://localhost:3000
+API_URL=http://localhost:3001
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
 ```
 
 ---
 
-## 14. Development Checklist
+## Development Checklist
 
-### Adding New Entity
+### New Entity
+1. Add to shared package models
+2. Create Prisma schema
+3. Run migration
+4. Create `I{Entity}Repository` in domain
+5. Create `Prisma{Entity}Repository` in infrastructure
+6. Register in `di-container.ts`
 
-- [ ] Create `domain/models/{Entity}.ts` interface
-- [ ] Create `domain/repositories/{Entity}Repository.ts` interface
-- [ ] Create `infrastructure/mongodb/schemas/{Entity}Schema.ts`
-- [ ] Create `infrastructure/mongodb/Mongo{Entity}Repository.ts`
-- [ ] Register repository in `di-container.ts`
-- [ ] Create entity class if complex business logic needed
+### New Use Case
+1. Create in `application/use-cases/{domain}/`
+2. Define input interface (or use from shared)
+3. Inject dependencies via constructor
+4. Implement `execute()` with validation
+5. Throw `Errors.*` for violations
 
-### Adding New Use Case
-
-- [ ] Create `application/use-cases/{domain}/{Action}{Entity}UseCase.ts`
-- [ ] Define input interface
-- [ ] Inject required dependencies
-- [ ] Implement `execute()` method with validation
-- [ ] Throw BusinessError for violations
-
-### Adding New HTTP Endpoint
-
-- [ ] Create controller method in `interfaces/controllers/{Entity}Controller.ts`
-- [ ] Add route in `infrastructure/http/routes/{entity}.ts`
-- [ ] Add authentication middleware if needed
-- [ ] Add validation middleware if needed
+### New HTTP Endpoint
+1. Create controller method in `interfaces/controllers/`
+2. Add route in `infrastructure/http/routes/`
+3. Add middleware if needed (auth, validation)
+4. Test error handling
 
 ---
 
-## 15. Best Practices Summary
-
-### Architecture
-- ✅ Domain layer has no external dependencies
-- ✅ Use cases orchestrate, don't contain business logic
-- ✅ Entities contain business rules
-- ✅ Infrastructure implements domain interfaces
-- ✅ Controllers only handle HTTP concerns
-
-### Code Quality
-- ✅ Use TypeScript strict mode
-- ✅ Use `@injectable()` for DI classes
-- ✅ Use `async/await` instead of callbacks
-- ✅ Always use `.lean()` with Mongoose queries
-- ✅ Validate ObjectId before database queries
-
-### Error Handling
-- ✅ Throw BusinessError from domain/application
-- ✅ Never catch errors in use cases
-- ✅ Let errors bubble to error handler middleware
-- ✅ Return appropriate HTTP status codes
-
-### Security
-- ✅ Hash passwords with bcrypt
-- ✅ Use JWT for authentication
-- ✅ Validate all user input
-- ✅ Never expose sensitive data (passwordHash)
-- ✅ Use CORS with specific origins
-
----
-
-**End of Documentation**
-
-> This guide provides patterns for Clean Architecture backend development in TypeScript. Apply these patterns consistently across your codebase for maintainability and scalability.
+**End of Specification**
