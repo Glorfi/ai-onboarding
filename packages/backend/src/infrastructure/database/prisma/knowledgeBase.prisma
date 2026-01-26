@@ -1,0 +1,13 @@
+model KnowledgeBase {
+  id        String   @id @default(uuid())
+  siteId    String   @map("site_id")
+  pageUrl   String   @map("page_url")
+  content   String
+  vectorId  String   @map("vector_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("knowledge_bases")
+}

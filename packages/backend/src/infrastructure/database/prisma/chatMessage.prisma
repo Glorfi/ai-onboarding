@@ -1,0 +1,13 @@
+model ChatMessage {
+  id             String   @id @default(uuid())
+  siteId         String   @map("site_id")
+  sessionId      String   @map("session_id")
+  message        String
+  response       String
+  responseTimeMs Int      @map("response_time_ms")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}

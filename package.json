@@ -1,0 +1,24 @@
+{
+  "name": "ai-onboarding",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "migrate": "npm run migrate --workspace=@ai-onboarding/backend",
+    "migrate:make": "npm run migrate:make --workspace=@ai-onboarding/backend"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "npm@10.2.0"
+}

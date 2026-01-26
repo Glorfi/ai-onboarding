@@ -1,0 +1,20 @@
+enum SiteStatus {
+  pending
+  crawling
+  active
+  error
+}
+
+enum TooltipPosition {
+  top
+  bottom
+  left
+  right
+}
+
+enum AnalyticsEventType {
+  walkthrough_started
+  walkthrough_completed
+  walkthrough_skipped
+  chat_message
+}

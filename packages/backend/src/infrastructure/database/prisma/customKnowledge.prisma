@@ -1,0 +1,12 @@
+model CustomKnowledge {
+  id        String   @id @default(uuid())
+  siteId    String   @map("site_id")
+  title     String
+  content   String
+  vectorId  String   @map("vector_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("custom_knowledge")
+}

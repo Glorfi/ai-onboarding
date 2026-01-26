@@ -1,0 +1,21 @@
+model Site {
+  id                  String     @id @default(uuid())
+  userId              String     @map("user_id")
+  url                 String
+  domain              String
+  name                String?
+  status              SiteStatus @default(pending)
+  triggerDelaySeconds Int        @default(5) @map("trigger_delay_seconds")
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKey           ApiKey?
+  walkthroughSteps WalkthroughStep[]
+  knowledgeBases   KnowledgeBase[]
+  customKnowledge  CustomKnowledge[]
+  chatMessages     ChatMessage[]
+  analytics        Analytics[]
+
+  @@map("sites")
+}

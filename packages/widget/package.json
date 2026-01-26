@@ -1,0 +1,9 @@
+{
+  "name": "@ai-onboarding/widget",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Widget - placeholder'",
+    "build": "echo 'Widget - placeholder'"
+  }
+}

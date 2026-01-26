@@ -1,0 +1,16 @@
+model WalkthroughStep {
+  id              String          @id @default(uuid())
+  siteId          String          @map("site_id")
+  version         Int             @default(1)
+  stepOrder       Int             @map("step_order")
+  targetSelectors String[]        @map("target_selectors")
+  title           String
+  description     String
+  position        TooltipPosition @default(bottom)
+  isActive        Boolean         @default(true) @map("is_active")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("walkthrough_steps")
+}

@@ -1,0 +1,9 @@
+{
+  "name": "@ai-onboarding/admin-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Admin app - placeholder'",
+    "build": "echo 'Admin app - placeholder'"
+  }
+}

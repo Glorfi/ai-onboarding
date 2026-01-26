@@ -1,0 +1,12 @@
+model ApiKey {
+  id                String    @id @default(uuid())
+  siteId            String    @unique @map("site_id")
+  key               String    @unique
+  isActive          Boolean   @default(true) @map("is_active")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  lastRegeneratedAt DateTime? @map("last_regenerated_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
+}

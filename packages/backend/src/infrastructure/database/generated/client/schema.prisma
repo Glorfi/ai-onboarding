@@ -1,0 +1,147 @@
+model Analytics {
+  id        String             @id @default(uuid())
+  siteId    String             @map("site_id")
+  eventType AnalyticsEventType @map("event_type")
+  sessionId String             @map("session_id")
+  metadata  Json               @default("{}")
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("analytics")
+}
+
+model ApiKey {
+  id                String    @id @default(uuid())
+  siteId            String    @unique @map("site_id")
+  key               String    @unique
+  isActive          Boolean   @default(true) @map("is_active")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  lastRegeneratedAt DateTime? @map("last_regenerated_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
+}
+
+model ChatMessage {
+  id             String   @id @default(uuid())
+  siteId         String   @map("site_id")
+  sessionId      String   @map("session_id")
+  message        String
+  response       String
+  responseTimeMs Int      @map("response_time_ms")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+model CustomKnowledge {
+  id        String   @id @default(uuid())
+  siteId    String   @map("site_id")
+  title     String
+  content   String
+  vectorId  String   @map("vector_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("custom_knowledge")
+}
+
+enum SiteStatus {
+  pending
+  crawling
+  active
+  error
+}
+
+enum TooltipPosition {
+  top
+  bottom
+  left
+  right
+}
+
+enum AnalyticsEventType {
+  walkthrough_started
+  walkthrough_completed
+  walkthrough_skipped
+  chat_message
+}
+
+model KnowledgeBase {
+  id        String   @id @default(uuid())
+  siteId    String   @map("site_id")
+  pageUrl   String   @map("page_url")
+  content   String
+  vectorId  String   @map("vector_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("knowledge_bases")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Site {
+  id                  String     @id @default(uuid())
+  userId              String     @map("user_id")
+  url                 String
+  domain              String
+  name                String?
+  status              SiteStatus @default(pending)
+  triggerDelaySeconds Int        @default(5) @map("trigger_delay_seconds")
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKey           ApiKey?
+  walkthroughSteps WalkthroughStep[]
+  knowledgeBases   KnowledgeBase[]
+  customKnowledge  CustomKnowledge[]
+  chatMessages     ChatMessage[]
+  analytics        Analytics[]
+
+  @@map("sites")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  sites Site[]
+
+  @@map("users")
+}
+
+model WalkthroughStep {
+  id              String          @id @default(uuid())
+  siteId          String          @map("site_id")
+  version         Int             @default(1)
+  stepOrder       Int             @map("step_order")
+  targetSelectors String[]        @map("target_selectors")
+  title           String
+  description     String
+  position        TooltipPosition @default(bottom)
+  isActive        Boolean         @default(true) @map("is_active")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("walkthrough_steps")
+}

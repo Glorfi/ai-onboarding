@@ -1,0 +1,12 @@
+model Analytics {
+  id        String             @id @default(uuid())
+  siteId    String             @map("site_id")
+  eventType AnalyticsEventType @map("event_type")
+  sessionId String             @map("session_id")
+  metadata  Json               @default("{}")
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("analytics")
+}
