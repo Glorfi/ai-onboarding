@@ -1,1 +1,1 @@
-export { }
+export { useGetCurrentUserQuery } from './getCurrentUserEndpoint';

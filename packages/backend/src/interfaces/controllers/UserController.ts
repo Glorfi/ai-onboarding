@@ -6,6 +6,8 @@ import {
 } from '@/application/use-cases';
 import { Errors, JwtService } from '@/domain';
 import { RefreshUserTokenUseCase } from '@/application/use-cases/user/RefreshUserTokenUseCase';
+import { GetCurrentUserUseCase } from '@/application/use-cases/user/GetCurrentUserUseCase';
+import { IGetCurrentUserResponse } from '@ai-onboarding/shared';
 
 export class UserController {
   static async register(req: Request, res: Response, next: NextFunction) {
@@ -74,6 +76,24 @@ export class UserController {
           maxAge: jwtService.getTokenMaxAge('refresh'), // 7 дней
         })
         .json({ refreshToken: newRefreshToken, accessToken });
+    } catch (error) {
+      next(error);
+    }
+  }
+  static async getCurrentUser(req: Request, res: Response, next: NextFunction) {
+    try {
+      const accessToken = req.cookies?.accessToken;
+      if (!accessToken) {
+        throw Errors.unauthorized('Access Token is not provided');
+      }
+      const useCase = container.resolve(GetCurrentUserUseCase);
+      const { user, userAccount } = await useCase.execute(accessToken);
+      const dto: IGetCurrentUserResponse = {
+        ...user,
+        displayName: userAccount.displayName,
+        avatarUrl: userAccount.avatarUrl,
+      };
+      res.json(dto);
     } catch (error) {
       next(error);
     }
