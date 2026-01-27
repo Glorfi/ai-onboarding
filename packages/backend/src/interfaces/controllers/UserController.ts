@@ -48,29 +48,34 @@ export class UserController {
     }
   }
   static async refreshToken(req: Request, res: Response, next: NextFunction) {
-    const refreshToken = req.cookies?.refreshToken;
-    if (!refreshToken) throw Errors.forbidden('Refresh Token is not provided');
-    const useCase = container.resolve(RefreshUserTokenUseCase);
-    const jwtService = container.resolve(JwtService);
+    try {
+      const refreshToken = req.cookies?.refreshToken;
+      if (!refreshToken)
+        throw Errors.unauthorized('Refresh Token is not provided');
+      const useCase = container.resolve(RefreshUserTokenUseCase);
+      const jwtService = container.resolve(JwtService);
 
-    const cookieOptions = {
-      httpOnly: true,
-      secure: true, // включать только в продакшене
-      sameSite: 'none' as const, // если фронт на другом домене
-    };
+      const cookieOptions = {
+        httpOnly: true,
+        secure: true, // включать только в продакшене
+        sameSite: 'none' as const, // если фронт на другом домене
+      };
 
-    const { refreshToken: newRefreshToken, accessToken } =
-      await useCase.execute(refreshToken);
-    res
-      .status(200)
-      .cookie('accessToken', accessToken, {
-        ...cookieOptions,
-        maxAge: jwtService.getTokenMaxAge('access'), // 1 день
-      })
-      .cookie('refreshToken', newRefreshToken, {
-        ...cookieOptions,
-        maxAge: jwtService.getTokenMaxAge('refresh'), // 7 дней
-      })
-      .json({ refreshToken: newRefreshToken, accessToken });
+      const { refreshToken: newRefreshToken, accessToken } =
+        await useCase.execute(refreshToken);
+      res
+        .status(200)
+        .cookie('accessToken', accessToken, {
+          ...cookieOptions,
+          maxAge: jwtService.getTokenMaxAge('access'), // 1 день
+        })
+        .cookie('refreshToken', newRefreshToken, {
+          ...cookieOptions,
+          maxAge: jwtService.getTokenMaxAge('refresh'), // 7 дней
+        })
+        .json({ refreshToken: newRefreshToken, accessToken });
+    } catch (error) {
+      next(error);
+    }
   }
 }

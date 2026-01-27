@@ -2,7 +2,6 @@ import { injectable, inject } from 'tsyringe';
 import { IUserRepository, IOAuthAccountRepository } from '@/domain/repositories';
 import { JwtService } from '@/domain/services';
 import { OAuthProviderRegistry } from './OAuthProviderRegistry';
-import { OAuthStateService } from './OAuthStateService';
 import {
   IOAuthAccount,
   IUserPublic,
@@ -29,27 +28,23 @@ export class OAuthService {
     private oauthAccountRepo: IOAuthAccountRepository,
     @inject('JwtService') private jwtService: JwtService,
     @inject('OAuthProviderRegistry')
-    private providerRegistry: OAuthProviderRegistry,
-    @inject('OAuthStateService') private stateService: OAuthStateService
+    private providerRegistry: OAuthProviderRegistry
   ) {}
 
-  getAuthorizationUrl(provider: OAuthProvider, redirectUri: string): string {
+  getAuthorizationUrl(
+    provider: OAuthProvider,
+    redirectUri: string,
+    state: string
+  ): string {
     const oauthProvider = this.providerRegistry.getProvider(provider);
-    const state = this.stateService.generateState(provider);
-
     return oauthProvider.getAuthorizationUrl(state, redirectUri);
   }
 
   async handleCallback(
     provider: OAuthProvider,
     code: string,
-    state: string,
     redirectUri: string
   ): Promise<IOAuthSignInResult> {
-    if (!this.stateService.validateAndConsumeState(state, provider)) {
-      throw Errors.oauthStateInvalid();
-    }
-
     const oauthProvider = this.providerRegistry.getProvider(provider);
 
     const tokens = await oauthProvider.exchangeCodeForTokens(code, redirectUri);

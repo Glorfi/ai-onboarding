@@ -5,6 +5,7 @@ import { OAuthProvider } from '@ai-onboarding/shared';
 export interface IGetOAuthUrlInput {
   provider: OAuthProvider;
   redirectUri: string;
+  state: string;
 }
 
 export interface IGetOAuthUrlOutput {
@@ -20,7 +21,8 @@ export class GetOAuthUrlUseCase {
   execute(input: IGetOAuthUrlInput): IGetOAuthUrlOutput {
     const authorizationUrl = this.oauthService.getAuthorizationUrl(
       input.provider,
-      input.redirectUri
+      input.redirectUri,
+      input.state
     );
 
     return { authorizationUrl };

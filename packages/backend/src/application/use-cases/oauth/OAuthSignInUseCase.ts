@@ -5,7 +5,6 @@ import { OAuthProvider } from '@ai-onboarding/shared';
 export interface IOAuthSignInInput {
   provider: OAuthProvider;
   code: string;
-  state: string;
   redirectUri: string;
 }
 
@@ -19,7 +18,6 @@ export class OAuthSignInUseCase {
     return this.oauthService.handleCallback(
       input.provider,
       input.code,
-      input.state,
       input.redirectUri
     );
   }

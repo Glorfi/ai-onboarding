@@ -56,22 +56,31 @@ export class GoogleOAuthProvider implements IOAuthProvider {
     code: string,
     redirectUri: string
   ): Promise<IOAuthTokens> {
+    const body = new URLSearchParams({
+      client_id: this.clientId,
+      client_secret: this.clientSecret,
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri: redirectUri,
+    });
+
+    // DEBUG
+    console.log('[Google OAuth] Token exchange request:');
+    console.log('  redirect_uri:', redirectUri);
+    console.log('  code:', code);
+    console.log('  client_id:', this.clientId.substring(0, 20) + '...');
+
     const response = await fetch(this.tokenEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams({
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: redirectUri,
-      }),
+      body,
     });
 
     if (!response.ok) {
       const error = await response.text();
+      console.log('[Google OAuth] Token exchange error:', error);
       throw Errors.oauthCallbackError(`Failed to exchange code: ${error}`);
     }
 
