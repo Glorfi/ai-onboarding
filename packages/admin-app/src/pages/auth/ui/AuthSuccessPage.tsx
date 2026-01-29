@@ -8,13 +8,13 @@ export default function AuthSuccessPage() {
   useEffect(() => {
     const isNewUser = searchParams.get('isNewUser') === 'true';
 
-    // Notify parent window via localStorage (works even after cross-origin redirect)
+    // Save result to localStorage for parent window to detect
     localStorage.setItem(
       'oauth-result',
-      JSON.stringify({ type: 'oauth-success', isNewUser })
+      JSON.stringify({ type: 'oauth-success', isNewUser, timestamp: Date.now() })
     );
 
-    // Try to close if we're a popup
+    // Try to close popup
     window.close();
 
     // Fallback: if window didn't close (not a popup), navigate directly
@@ -24,7 +24,7 @@ export default function AuthSuccessPage() {
       } else {
         navigate('/', { replace: true });
       }
-    }, 100);
+    }, 200);
   }, [searchParams, navigate]);
 
   return (

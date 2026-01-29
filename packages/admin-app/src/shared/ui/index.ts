@@ -5,3 +5,4 @@ export * from './label';
 export * from './input';
 export * from './spinner';
 export * from './avatar';
+export * from './toastSlice';

@@ -13,7 +13,7 @@ import {
   Input,
   Label,
 } from '@/shared/ui';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useSignInMutation } from '../api';
 import {
   signInInputSchema,
@@ -23,7 +23,8 @@ import { getErrorMessage } from '@/shared/lib';
 import { useEffect } from 'react';
 
 export default function AuthPasswordSignInPage() {
-  const [signIn, { error }] = useSignInMutation();
+  const [signIn, { error, isSuccess }] = useSignInMutation();
+  const navigate = useNavigate();
 
   const {
     register,
@@ -45,6 +46,10 @@ export default function AuthPasswordSignInPage() {
       setError('root', { message });
     }
   }, [error, setError]);
+
+  useEffect(() => {
+    isSuccess && navigate(APP_PATH.MAIN, { replace: true });
+  }, [isSuccess]);
 
   return (
     <section className="w-full flex items-center justify-center h-dvh">

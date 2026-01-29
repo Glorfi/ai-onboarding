@@ -1,4 +1,4 @@
-import { IUserPublic } from '../../entities';
+import type { IUserPublic } from '../../entities';
 
 export interface IPasswordSignInResponse extends IUserPublic {
   accessToken: string;
