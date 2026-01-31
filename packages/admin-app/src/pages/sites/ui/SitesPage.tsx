@@ -4,7 +4,7 @@ import { SitesListWidget } from '@/widgets/sites-list';
 
 export default function SitesPage() {
   return (
-    <section className="container mx-auto px-4 py-8">
+    <section className="container mx-auto px-6 pt-12">
       <header className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">My Sites</h1>
