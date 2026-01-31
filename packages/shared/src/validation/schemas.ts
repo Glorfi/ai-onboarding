@@ -23,15 +23,6 @@ export const signInInputSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
-export const createSiteInputSchema = z.object({
-  url: z.string().url('Invalid URL format'),
-  name: z.string().max(100).optional(),
-});
-
-export const updateSiteInputSchema = z.object({
-  name: z.string().max(100).optional(),
-  triggerDelaySeconds: z.number().int().min(0).max(60).optional(),
-});
 
 export const addCustomKnowledgeInputSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
@@ -56,8 +47,6 @@ export const trackAnalyticsInputSchema = z.object({
 
 export type IRegisterInput = z.infer<typeof registerInputSchema>;
 export type ISignInInput = z.infer<typeof signInInputSchema>;
-export type ICreateSiteInput = z.infer<typeof createSiteInputSchema>;
-export type IUpdateSiteInput = z.infer<typeof updateSiteInputSchema>;
 export type IAddCustomKnowledgeInput = z.infer<typeof addCustomKnowledgeInputSchema>;
 export type IChatMessageInput = z.infer<typeof chatMessageInputSchema>;
 export type ITrackAnalyticsInput = z.infer<typeof trackAnalyticsInputSchema>;

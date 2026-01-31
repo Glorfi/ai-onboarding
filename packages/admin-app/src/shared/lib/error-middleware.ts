@@ -118,12 +118,6 @@ export const errorMiddleware: Middleware = (api) => (next) => (action) => {
   const isRejectedVal = isRejectedWithValue(action);
   const isRTKRejected = isRTKQueryRejectedAction(action);
 
-  console.log('[errorMiddleware] Check:', {
-    type: act.type,
-    isRejectedWithValue: isRejectedVal,
-    isRTKQueryRejected: isRTKRejected,
-  });
-
   if (!isRejectedVal && !isRTKRejected) {
     return next(action);
   }

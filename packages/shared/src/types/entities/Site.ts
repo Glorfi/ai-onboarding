@@ -8,6 +8,9 @@ export interface ISite {
   name?: string;
   status: SiteStatus;
   triggerDelaySeconds: number;
+  additionalUrls: string[];
+  lastCrawledAt?: Date;
+  errorMessage?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +20,7 @@ export interface ICreateSiteData {
   url: string;
   domain: string;
   name?: string;
+  additionalUrls?: string[];
   triggerDelaySeconds?: number;
 }
 
@@ -24,4 +28,6 @@ export interface IUpdateSiteData {
   name?: string;
   status?: SiteStatus;
   triggerDelaySeconds?: number;
+  lastCrawledAt?: Date;
+  errorMessage?: string;
 }

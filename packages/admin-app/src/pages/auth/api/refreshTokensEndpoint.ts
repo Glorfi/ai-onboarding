@@ -1,5 +1,5 @@
 import { mainApi } from '@/shared/api';
-import { API_PATHS } from '@/shared/config/apiPaths';
+import { API_PATHS } from '@/shared/config';
 import type {
   IPasswordSignInRequest,
   IPasswordSignInResponse,

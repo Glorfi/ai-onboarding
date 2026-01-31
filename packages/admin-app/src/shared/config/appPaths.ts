@@ -11,4 +11,6 @@ export const APP_PATH = {
   AUTH: '/auth',
   AUTH_PASSWORD: '/auth/password',
   AUTH_SUCCESS: '/auth/success',
+  // SITES
+  SITES: '/sites',
 } as const;

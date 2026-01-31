@@ -1,5 +1,5 @@
 import { mainApi } from '@/shared/api';
-import { API_PATHS } from '@/shared/config/apiPaths';
+import { API_PATHS } from '@/shared/config';
 import type { IGetCurrentUserResponse } from '@ai-onboarding/shared';
 
 export const signInApi = mainApi.injectEndpoints({

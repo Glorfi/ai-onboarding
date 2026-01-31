@@ -92,4 +92,51 @@ export const Errors = {
       `OAuth callback error: ${message}`,
       ERROR_CODES.OAUTH_CALLBACK_ERROR
     ),
+
+  // Site errors
+  siteNotFound: () =>
+    new BusinessError('Site not found', ERROR_CODES.SITE_NOT_FOUND),
+
+  siteNotOwned: () =>
+    new BusinessError(
+      'You do not have permission to access this site',
+      ERROR_CODES.SITE_NOT_OWNED
+    ),
+
+  // Crawl errors
+  crawlInvalidUrl: (url: string) =>
+    new BusinessError(
+      `Invalid or inaccessible URL: ${url}`,
+      ERROR_CODES.CRAWL_INVALID_URL
+    ),
+
+  crawlBotDetected: () =>
+    new BusinessError(
+      'Access denied by the website. The site may be blocking automated access.',
+      ERROR_CODES.CRAWL_BOT_DETECTED
+    ),
+
+  crawlNoContent: () =>
+    new BusinessError(
+      'No content could be extracted from the provided URLs',
+      ERROR_CODES.CRAWL_NO_CONTENT
+    ),
+
+  crawlInsufficientPages: (found: number, required: number) =>
+    new BusinessError(
+      `Insufficient pages crawled: ${found}/${required} required`,
+      ERROR_CODES.CRAWL_INSUFFICIENT_PAGES
+    ),
+
+  crawlAlreadyInProgress: () =>
+    new BusinessError(
+      'A crawl is already in progress for this site',
+      ERROR_CODES.CRAWL_ALREADY_IN_PROGRESS
+    ),
+
+  crawlRateLimited: () =>
+    new BusinessError(
+      'Please wait before starting another crawl. Rate limit: 1 crawl per hour.',
+      ERROR_CODES.CRAWL_RATE_LIMITED
+    ),
 };

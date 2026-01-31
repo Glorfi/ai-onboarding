@@ -14,5 +14,6 @@ export const mainApi = createApi({
     },
     credentials: 'include', // Для работы с cookies
   }),
+  tagTypes: ['Site', 'CrawlStatus'],
   endpoints: () => ({}),
 });

@@ -6,3 +6,7 @@ export * from './input';
 export * from './spinner';
 export * from './avatar';
 export * from './toastSlice';
+export * from './dialog';
+export * from './progress';
+export * from './badge';
+export * from './alert';

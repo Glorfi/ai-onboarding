@@ -1,4 +1,4 @@
-import { useGetCurrentUserQuery } from '@/entities/user/api';
+import { useGetCurrentUserQuery } from '@/entities/user';
 import { Avatar, AvatarFallback, AvatarImage, Spinner } from '@/shared/ui';
 
 export default function Main() {
