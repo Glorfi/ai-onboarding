@@ -12,14 +12,22 @@ model Site {
   createdAt           DateTime   @default(now()) @map("created_at")
   updatedAt           DateTime   @updatedAt @map("updated_at")
 
+  // Chat widget settings
+  similarityThreshold   Decimal @default(0.70) @map("similarity_threshold") @db.Decimal(3, 2)
+  allowGeneralKnowledge Boolean @default(false) @map("allow_general_knowledge")
+  maxMessagesPerSession Int     @default(15) @map("max_messages_per_session")
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  apiKey           ApiKey?
-  walkthroughSteps WalkthroughStep[]
-  knowledgeBases   KnowledgeBase[]
-  customKnowledge  CustomKnowledge[]
-  chatMessages     ChatMessage[]
-  analytics        Analytics[]
+  apiKey              ApiKey?
+  walkthroughSteps    WalkthroughStep[]
+  knowledgeBases      KnowledgeBase[]
+  customKnowledge     CustomKnowledge[]
+  chatMessages        ChatMessage[]
+  analytics           Analytics[]
+  unansweredQuestions UnansweredQuestion[]
+  chatRatings         ChatRating[]
+  widgetSessions      WidgetSession[]
 
   @@unique([userId, domain])
   @@map("sites")

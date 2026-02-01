@@ -2,3 +2,8 @@ export { IUserRepository } from './IUserRepository';
 export { IOAuthAccountRepository } from './IOAuthAccountRepository';
 export { ISiteRepository } from './ISiteRepository';
 export { IKnowledgeBaseRepository } from './IKnowledgeBaseRepository';
+export { IUnansweredQuestionRepository } from './IUnansweredQuestionRepository';
+export { IChatRatingRepository } from './IChatRatingRepository';
+export { IWidgetSessionRepository } from './IWidgetSessionRepository';
+export { IChatMessageRepository } from './IChatMessageRepository';
+export { IApiKeyRepository } from './IApiKeyRepository';

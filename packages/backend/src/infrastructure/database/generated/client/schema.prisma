@@ -33,9 +33,26 @@ model ChatMessage {
   responseTimeMs Int      @map("response_time_ms")
   createdAt      DateTime @default(now()) @map("created_at")
 
-  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  site   Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  rating ChatRating?
 
   @@map("chat_messages")
+}
+
+model ChatRating {
+  id            String     @id @default(uuid())
+  chatMessageId String     @unique @map("chat_message_id")
+  siteId        String     @map("site_id")
+  sessionId     String     @map("session_id")
+  rating        RatingType
+  feedback      String?
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  chatMessage ChatMessage @relation(fields: [chatMessageId], references: [id], onDelete: Cascade)
+  site        Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@map("chat_ratings")
 }
 
 model CustomKnowledge {
@@ -78,6 +95,17 @@ enum OAuthProvider {
   telegram
   github
   apple
+}
+
+enum UnansweredQuestionStatus {
+  new
+  contacted
+  resolved
+}
+
+enum RatingType {
+  positive
+  negative
 }
 
 model KnowledgeBase {
@@ -135,17 +163,45 @@ model Site {
   createdAt           DateTime   @default(now()) @map("created_at")
   updatedAt           DateTime   @updatedAt @map("updated_at")
 
+  // Chat widget settings
+  similarityThreshold   Decimal @default(0.70) @map("similarity_threshold") @db.Decimal(3, 2)
+  allowGeneralKnowledge Boolean @default(false) @map("allow_general_knowledge")
+  maxMessagesPerSession Int     @default(15) @map("max_messages_per_session")
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  apiKey           ApiKey?
-  walkthroughSteps WalkthroughStep[]
-  knowledgeBases   KnowledgeBase[]
-  customKnowledge  CustomKnowledge[]
-  chatMessages     ChatMessage[]
-  analytics        Analytics[]
+  apiKey              ApiKey?
+  walkthroughSteps    WalkthroughStep[]
+  knowledgeBases      KnowledgeBase[]
+  customKnowledge     CustomKnowledge[]
+  chatMessages        ChatMessage[]
+  analytics           Analytics[]
+  unansweredQuestions UnansweredQuestion[]
+  chatRatings         ChatRating[]
+  widgetSessions      WidgetSession[]
 
   @@unique([userId, domain])
   @@map("sites")
+}
+
+model UnansweredQuestion {
+  id             String                   @id @default(uuid())
+  siteId         String                   @map("site_id")
+  sessionId      String                   @map("session_id")
+  userEmail      String?                  @map("user_email")
+  question       String
+  bestMatchScore Decimal                  @map("best_match_score") @db.Decimal(4, 3)
+  timestamp      DateTime
+  status         UnansweredQuestionStatus @default(new)
+  contactedAt    DateTime?                @map("contacted_at")
+  resolvedAt     DateTime?                @map("resolved_at")
+  createdAt      DateTime                 @default(now()) @map("created_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, status])
+  @@index([createdAt(sort: Desc)])
+  @@map("unanswered_questions")
 }
 
 model User {
@@ -176,4 +232,20 @@ model WalkthroughStep {
   site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
   @@map("walkthrough_steps")
+}
+
+model WidgetSession {
+  id            String   @id
+  siteId        String   @map("site_id")
+  ipAddressHash String   @map("ip_address_hash")
+  userEmail     String?  @map("user_email")
+  messagesCount Int      @default(0) @map("messages_count")
+  firstSeenAt   DateTime @default(now()) @map("first_seen_at")
+  lastSeenAt    DateTime @default(now()) @map("last_seen_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@index([lastSeenAt(sort: Desc)])
+  @@map("widget_sessions")
 }

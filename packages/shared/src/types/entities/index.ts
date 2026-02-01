@@ -7,3 +7,6 @@ export * from './KnowledgeBase';
 export * from './CustomKnowledge';
 export * from './ChatMessage';
 export * from './Analytics';
+export * from './UnansweredQuestion';
+export * from './ChatRating';
+export * from './WidgetSession';

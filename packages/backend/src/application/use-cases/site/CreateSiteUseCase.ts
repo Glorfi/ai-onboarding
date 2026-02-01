@@ -1,19 +1,26 @@
 import { injectable, inject } from 'tsyringe';
-import { ISiteRepository } from '@/domain/repositories';
+import crypto from 'crypto';
+import { ISiteRepository, IApiKeyRepository } from '@/domain/repositories';
 import { ICrawlStatusService } from '@/domain/services/cache';
-import { ISite } from '@/domain/models';
+import { ISite, IApiKey } from '@/domain/models';
 import { Errors } from '@/domain/errors';
 import { createSiteInputSchema, ICreateSiteInput } from '@ai-onboarding/shared';
 import { crawlQueue } from '@/infrastructure/jobs/queue';
 
 export interface ICreateSiteOutput {
   site: ISite;
+  apiKey: IApiKey;
+}
+
+function generateApiKey(): string {
+  return `aio_${crypto.randomBytes(24).toString('hex')}`;
 }
 
 @injectable()
 export class CreateSiteUseCase {
   constructor(
     @inject('ISiteRepository') private siteRepo: ISiteRepository,
+    @inject('IApiKeyRepository') private apiKeyRepo: IApiKeyRepository,
     @inject('ICrawlStatusService') private statusService: ICrawlStatusService
   ) {}
 
@@ -60,6 +67,12 @@ export class CreateSiteUseCase {
     // Record crawl start for rate limiting
     await this.statusService.recordCrawlStart(site.id);
 
-    return { site: updatedSite };
+    // Create API key for the site
+    const apiKey = await this.apiKeyRepo.create({
+      siteId: site.id,
+      key: generateApiKey(),
+    });
+
+    return { site: updatedSite, apiKey };
   }
 }

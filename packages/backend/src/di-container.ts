@@ -3,6 +3,11 @@ import { container } from 'tsyringe';
 import {
   PrismaUserRepository,
   PrismaOAuthAccountRepository,
+  PrismaApiKeyRepository,
+  PrismaChatMessageRepository,
+  PrismaChatRatingRepository,
+  PrismaUnansweredQuestionRepository,
+  PrismaWidgetSessionRepository,
 } from './infrastructure/database/repositories';
 import { PrismaSiteRepository } from './infrastructure/database/repositories/PrismaSiteRepository';
 import { PrismaKnowledgeBaseRepository } from './infrastructure/database/repositories/PrismaKnowledgeBaseRepository';
@@ -18,6 +23,9 @@ import { PlaywrightCrawlerService } from './infrastructure/crawling/PlaywrightCr
 import { TextChunker } from './infrastructure/crawling/TextChunker';
 import { OpenAIEmbeddingService } from './infrastructure/embedding/OpenAIEmbeddingService';
 import { PineconeVectorStoreService } from './infrastructure/vector/PineconeVectorStoreService';
+import { RedisRateLimitService } from './infrastructure/cache/RedisRateLimitService';
+import { OpenAIChatService } from './infrastructure/chat/OpenAIChatService';
+import { KnowledgeBaseSearchService } from './infrastructure/knowledge/KnowledgeBaseSearchService';
 
 export function initDI() {
   // Repositories
@@ -33,6 +41,19 @@ export function initDI() {
   container.register('IKnowledgeBaseRepository', {
     useClass: PrismaKnowledgeBaseRepository,
   });
+  container.register('IUnansweredQuestionRepository', {
+    useClass: PrismaUnansweredQuestionRepository,
+  });
+  container.register('IChatRatingRepository', {
+    useClass: PrismaChatRatingRepository,
+  });
+  container.register('IWidgetSessionRepository', {
+    useClass: PrismaWidgetSessionRepository,
+  });
+  container.register('IChatMessageRepository', {
+    useClass: PrismaChatMessageRepository,
+  });
+  container.register('IApiKeyRepository', { useClass: PrismaApiKeyRepository });
 
   // Domain Services
   container.registerSingleton('PasswordService', PasswordService);
@@ -48,10 +69,22 @@ export function initDI() {
   container.registerSingleton('ICrawlerService', PlaywrightCrawlerService);
   container.registerSingleton('ITextChunker', TextChunker);
   container.registerSingleton('IEmbeddingService', OpenAIEmbeddingService);
-  container.registerSingleton('IVectorStoreService', PineconeVectorStoreService);
+  container.registerSingleton(
+    'IVectorStoreService',
+    PineconeVectorStoreService,
+  );
+
+  container.registerSingleton('IRateLimitService', RedisRateLimitService);
+  container.registerSingleton(
+    'IKnowledgeBaseSearchService',
+    KnowledgeBaseSearchService,
+  );
+  container.registerSingleton('IChatService', OpenAIChatService);
 
   // Register OAuth Providers
-  const registry = container.resolve<OAuthProviderRegistry>('OAuthProviderRegistry');
+  const registry = container.resolve<OAuthProviderRegistry>(
+    'OAuthProviderRegistry',
+  );
 
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     registry.registerProvider(new GoogleOAuthProvider());

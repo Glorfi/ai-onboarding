@@ -21,4 +21,15 @@ export {
   IAnalytics,
   AnalyticsEventType,
   ICreateAnalyticsData,
+  // Chat widget types
+  IUnansweredQuestion,
+  ICreateUnansweredQuestionData,
+  IUpdateUnansweredQuestionData,
+  UnansweredQuestionStatus,
+  IChatRating,
+  ICreateChatRatingData,
+  RatingType,
+  IWidgetSession,
+  ICreateWidgetSessionData,
+  IUpdateWidgetSessionData,
 } from '@ai-onboarding/shared';

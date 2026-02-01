@@ -1,0 +1,19 @@
+model UnansweredQuestion {
+  id             String                   @id @default(uuid())
+  siteId         String                   @map("site_id")
+  sessionId      String                   @map("session_id")
+  userEmail      String?                  @map("user_email")
+  question       String
+  bestMatchScore Decimal                  @map("best_match_score") @db.Decimal(4, 3)
+  timestamp      DateTime
+  status         UnansweredQuestionStatus @default(new)
+  contactedAt    DateTime?                @map("contacted_at")
+  resolvedAt     DateTime?                @map("resolved_at")
+  createdAt      DateTime                 @default(now()) @map("created_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, status])
+  @@index([createdAt(sort: Desc)])
+  @@map("unanswered_questions")
+}

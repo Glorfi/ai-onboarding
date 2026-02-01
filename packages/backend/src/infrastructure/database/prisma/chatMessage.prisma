@@ -7,7 +7,8 @@ model ChatMessage {
   responseTimeMs Int      @map("response_time_ms")
   createdAt      DateTime @default(now()) @map("created_at")
 
-  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  site   Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  rating ChatRating?
 
   @@map("chat_messages")
 }

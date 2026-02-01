@@ -1,0 +1,15 @@
+model ChatRating {
+  id            String     @id @default(uuid())
+  chatMessageId String     @unique @map("chat_message_id")
+  siteId        String     @map("site_id")
+  sessionId     String     @map("session_id")
+  rating        RatingType
+  feedback      String?
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  chatMessage ChatMessage @relation(fields: [chatMessageId], references: [id], onDelete: Cascade)
+  site        Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@map("chat_ratings")
+}

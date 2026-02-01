@@ -13,6 +13,10 @@ export interface ISite {
   errorMessage?: string;
   createdAt: Date;
   updatedAt: Date;
+  // Chat widget settings
+  similarityThreshold: number;
+  allowGeneralKnowledge: boolean;
+  maxMessagesPerSession: number;
 }
 
 export interface ICreateSiteData {
@@ -30,4 +34,8 @@ export interface IUpdateSiteData {
   triggerDelaySeconds?: number;
   lastCrawledAt?: Date;
   errorMessage?: string;
+  // Chat widget settings
+  similarityThreshold?: number;
+  allowGeneralKnowledge?: boolean;
+  maxMessagesPerSession?: number;
 }

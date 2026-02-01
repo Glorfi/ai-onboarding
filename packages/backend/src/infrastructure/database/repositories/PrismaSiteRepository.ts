@@ -2,21 +2,7 @@ import { injectable } from 'tsyringe';
 import { ISiteRepository } from '@/domain/repositories';
 import { ISite, ICreateSiteData, IUpdateSiteData, SiteStatus } from '@/domain/models';
 import { prisma } from '../prisma';
-
-type PrismaSite = {
-  id: string;
-  userId: string;
-  url: string;
-  domain: string;
-  name: string | null;
-  status: SiteStatus;
-  triggerDelaySeconds: number;
-  additionalUrls: string[];
-  lastCrawledAt: Date | null;
-  errorMessage: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
+import type { Site as PrismaSite } from '../generated/client';
 
 function mapSite(site: PrismaSite): ISite {
   return {
@@ -24,6 +10,7 @@ function mapSite(site: PrismaSite): ISite {
     name: site.name ?? undefined,
     lastCrawledAt: site.lastCrawledAt ?? undefined,
     errorMessage: site.errorMessage ?? undefined,
+    similarityThreshold: Number(site.similarityThreshold),
   };
 }
 

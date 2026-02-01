@@ -93,6 +93,8 @@ export class CrawlJobProcessor {
               result.links,
               url,
             );
+            console.log('RAW LINKS:', result.links);
+            console.log('SAME DOMAIN:', sameDomainLinks);
 
             for (const link of sameDomainLinks) {
               const normalizedLink = this.normalizeUrl(link);

@@ -5,3 +5,6 @@ export * from './crawling';
 export * from './embedding';
 export * from './vector';
 export * from './cache';
+export * from './ratelimit';
+export * from './knowledge';
+export * from './chat';

@@ -1,0 +1,15 @@
+model WidgetSession {
+  id            String   @id
+  siteId        String   @map("site_id")
+  ipAddressHash String   @map("ip_address_hash")
+  userEmail     String?  @map("user_email")
+  messagesCount Int      @default(0) @map("messages_count")
+  firstSeenAt   DateTime @default(now()) @map("first_seen_at")
+  lastSeenAt    DateTime @default(now()) @map("last_seen_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@index([lastSeenAt(sort: Desc)])
+  @@map("widget_sessions")
+}

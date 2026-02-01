@@ -26,3 +26,14 @@ enum OAuthProvider {
   github
   apple
 }
+
+enum UnansweredQuestionStatus {
+  new
+  contacted
+  resolved
+}
+
+enum RatingType {
+  positive
+  negative
+}

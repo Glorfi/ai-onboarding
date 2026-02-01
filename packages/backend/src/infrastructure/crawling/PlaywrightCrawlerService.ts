@@ -34,13 +34,21 @@ export class PlaywrightCrawlerService implements ICrawlerService {
           'Mozilla/5.0 (compatible; OnboardingBot/1.0; +https://onboarding.ai)',
       });
 
+      // Initial navigation - wait for DOM to be ready
       await page.goto(url, {
-        waitUntil: 'load',
+        waitUntil: 'domcontentloaded',
         timeout,
       });
 
-      // Wait a bit for any dynamic content to load
-      await page.waitForTimeout(2000);
+      // Wait for network to become idle (SPA data loading)
+      try {
+        await page.waitForLoadState('networkidle', { timeout: 10000 });
+      } catch {
+        // networkidle timeout is ok - some pages have persistent connections
+      }
+
+      // Wait for DOM to stabilize (SPA rendering)
+      await this.waitForDomStable(page, 3000);
 
       // Extract content and links
       const result = await page.evaluate(
@@ -52,7 +60,21 @@ export class PlaywrightCrawlerService implements ICrawlerService {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const doc = (globalThis as any).document;
 
-          // Remove unwanted elements
+          // Get title first
+          const title = doc.title || '';
+
+          // IMPORTANT: Extract links BEFORE removing navigation elements
+          // because most internal links are in nav/header/footer
+          const linkElements = doc.querySelectorAll('a[href]');
+          const links: string[] = [];
+          linkElements.forEach((link: any) => {
+            const href = link.getAttribute('href');
+            if (href) {
+              links.push(href);
+            }
+          });
+
+          // Now remove unwanted elements for content extraction only
           const selectorsToRemove = [
             'nav',
             'footer',
@@ -84,21 +106,8 @@ export class PlaywrightCrawlerService implements ICrawlerService {
             .forEach((el: any) => el.remove());
           doc.querySelectorAll('[hidden]').forEach((el: any) => el.remove());
 
-          // Get title
-          const title = doc.title || '';
-
-          // Get main content text
+          // Get main content text (after removing nav/footer/etc)
           const content = doc.body?.innerText || '';
-
-          // Get all links
-          const linkElements = doc.querySelectorAll('a[href]');
-          const links: string[] = [];
-          linkElements.forEach((link: any) => {
-            const href = link.getAttribute('href');
-            if (href) {
-              links.push(href);
-            }
-          });
 
           return { title, content, links };
         },
@@ -153,6 +162,29 @@ export class PlaywrightCrawlerService implements ICrawlerService {
       if (page) {
         await page.close();
       }
+    }
+  }
+
+  private async waitForDomStable(page: Page, timeout: number): Promise<void> {
+    const checkInterval = 200;
+    const minStableTime = 500;
+    let lastHtmlLength = 0;
+    let stableStart = Date.now();
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeout) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const currentLength = await page.evaluate(() => (globalThis as any).document.body?.innerHTML?.length || 0);
+
+      if (currentLength !== lastHtmlLength) {
+        lastHtmlLength = currentLength;
+        stableStart = Date.now();
+      } else if (Date.now() - stableStart >= minStableTime) {
+        // DOM has been stable for minStableTime
+        return;
+      }
+
+      await page.waitForTimeout(checkInterval);
     }
   }
 

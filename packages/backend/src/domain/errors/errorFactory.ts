@@ -139,4 +139,41 @@ export const Errors = {
       'Please wait before starting another crawl. Rate limit: 1 crawl per hour.',
       ERROR_CODES.CRAWL_RATE_LIMITED
     ),
+
+  // Widget errors
+  widgetApiKeyInvalid: () =>
+    new BusinessError('Invalid API key', ERROR_CODES.WIDGET_API_KEY_INVALID),
+
+  widgetApiKeyInactive: () =>
+    new BusinessError('API key is inactive', ERROR_CODES.WIDGET_API_KEY_INACTIVE),
+
+  widgetDomainMismatch: (requestDomain: string, siteDomain: string) =>
+    new BusinessError(
+      `Domain mismatch: ${requestDomain} is not authorized (expected ${siteDomain})`,
+      ERROR_CODES.WIDGET_DOMAIN_MISMATCH
+    ),
+
+  widgetSessionLimit: (retryAfter: number) => {
+    const error = new BusinessError(
+      'Session message limit exceeded',
+      ERROR_CODES.WIDGET_SESSION_LIMIT
+    );
+    (error as any).retryAfter = retryAfter;
+    return error;
+  },
+
+  widgetIpLimit: (retryAfter: number) => {
+    const error = new BusinessError(
+      'IP rate limit exceeded',
+      ERROR_CODES.WIDGET_IP_LIMIT
+    );
+    (error as any).retryAfter = retryAfter;
+    return error;
+  },
+
+  widgetMessageNotFound: () =>
+    new BusinessError('Message not found', ERROR_CODES.WIDGET_MESSAGE_NOT_FOUND),
+
+  widgetQuestionNotFound: () =>
+    new BusinessError('Question not found', ERROR_CODES.WIDGET_QUESTION_NOT_FOUND),
 };
