@@ -36,7 +36,7 @@ export function SitesListWidget() {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="flex flex-col gap-4 md:flex-row md:flex-wrap items-stretch">
       {data.sites.map((site) => (
         <SiteCardWithPolling key={site.id} site={site} />
       ))}

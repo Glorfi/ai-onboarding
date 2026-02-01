@@ -3,6 +3,7 @@ import { DeleteSiteDialog } from '@/features/site/delete';
 import { RecrawlButton } from '@/features/site/recrawl';
 import { Button } from '@/shared/ui';
 import type { ISite, SiteStatus } from '@ai-onboarding/shared';
+import { Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface SiteCardWithPollingProps {
@@ -54,8 +55,8 @@ export default function SiteCardWithPolling(props: SiteCardWithPollingProps) {
             siteId={site.id}
             siteName={site.name || site.domain}
             trigger={
-              <Button variant="ghost" size="sm">
-                Delete
+              <Button variant="ghost" size={"icon-sm"}>
+               <Trash2 />
               </Button>
             }
           />

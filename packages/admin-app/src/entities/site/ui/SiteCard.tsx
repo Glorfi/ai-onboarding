@@ -19,7 +19,15 @@ interface SiteCardProps {
 export function SiteCard(props: SiteCardProps) {
   const { site, actionsSlot, progressSlot } = props;
   return (
-    <Card>
+    <Card
+      className="    flex flex-col
+    basis-full
+    md:basis-[calc(50%-0.5rem)]
+    lg:basis-[calc(33.333%-0.75rem)]
+    min-w-[320px]
+    max-w-full
+    shrink-0"
+    >
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {site.name || formatDomain(site.url)}
