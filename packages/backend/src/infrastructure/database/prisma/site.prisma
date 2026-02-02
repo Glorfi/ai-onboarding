@@ -13,7 +13,7 @@ model Site {
   updatedAt           DateTime   @updatedAt @map("updated_at")
 
   // Chat widget settings
-  similarityThreshold   Decimal @default(0.70) @map("similarity_threshold") @db.Decimal(3, 2)
+  similarityThreshold   Decimal @default(0.20) @map("similarity_threshold") @db.Decimal(3, 2)
   allowGeneralKnowledge Boolean @default(false) @map("allow_general_knowledge")
   maxMessagesPerSession Int     @default(15) @map("max_messages_per_session")
 

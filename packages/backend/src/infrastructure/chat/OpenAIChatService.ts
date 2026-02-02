@@ -7,13 +7,16 @@ const CHAT_MODEL = 'gpt-4o-mini';
 const TEMPERATURE = 0.3;
 const MAX_TOKENS = 500;
 
-const SYSTEM_PROMPT_KNOWLEDGE_ONLY = `You are a helpful customer support assistant. Answer questions ONLY using the provided knowledge base context. If the context doesn't contain enough information, politely say you don't have that information and suggest the user contact support.
+const SYSTEM_PROMPT_KNOWLEDGE_ONLY = `You are a helpful customer support assistant. Answer questions ONLY using the provided knowledge base context. If context does not have the answer, return exactly: "noAnswer"
+Do not write anything else.
 
 Rules:
 1. If the context contains the answer, provide a clear, concise response
 2. Never make up information or use general knowledge
 3. Keep responses under 300 words
-4. Be friendly and professional`;
+4. Be friendly and professional
+5. Speak as you're a customer support representative of this company.
+`;
 
 const SYSTEM_PROMPT_WITH_GENERAL = `You are a helpful customer support assistant. Answer questions using the provided knowledge base context. If the context doesn't contain the answer but you have relevant general knowledge, you may use it BUT you MUST prefix your response with:
 
@@ -23,7 +26,8 @@ Rules:
 1. Always prioritize knowledge base context
 2. Keep responses under 300 words
 3. Be friendly and professional
-4. If you use general knowledge, make it very clear`;
+4. If you use general knowledge, make it very clear
+`;
 
 @injectable()
 export class OpenAIChatService implements IChatService {
@@ -39,7 +43,7 @@ export class OpenAIChatService implements IChatService {
     question: string,
     chunks: IKnowledgeChunk[],
     allowGeneralKnowledge: boolean,
-    _siteName?: string
+    _siteName?: string,
   ): Promise<IChatResponse> {
     const systemPrompt = allowGeneralKnowledge
       ? SYSTEM_PROMPT_WITH_GENERAL
@@ -47,7 +51,7 @@ export class OpenAIChatService implements IChatService {
 
     const context = chunks
       .map(
-        (chunk, i) => `[Source ${i + 1} - ${chunk.pageUrl}]\n${chunk.content}`
+        (chunk, i) => `[Source ${i + 1} - ${chunk.pageUrl}]\n${chunk.content}`,
       )
       .join('\n\n---\n\n');
 

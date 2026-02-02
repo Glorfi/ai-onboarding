@@ -32,6 +32,8 @@ export class KnowledgeBaseSearchService implements IKnowledgeBaseSearchService {
       TOP_K,
       siteId
     );
+    console.log(results);
+    
 
     // 3. Filter by threshold
     const relevantChunks = results.filter((match) => match.score >= threshold);

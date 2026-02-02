@@ -37,109 +37,77 @@ export class ProcessChatMessageUseCase {
     @inject('IRateLimitService') private rateLimitService: IRateLimitService,
     @inject('IKnowledgeBaseSearchService')
     private searchService: IKnowledgeBaseSearchService,
-    @inject('IChatService') private chatService: IChatService
+    @inject('IChatService') private chatService: IChatService,
   ) {}
 
   async execute(
     siteId: string,
     input: IWidgetChatRequest,
     ipAddress: string,
-    requestDomain: string
+    requestDomain: string,
   ): Promise<IChatResult> {
     const startTime = Date.now();
 
     // 1. Validate input
     const validated = widgetChatRequestSchema.parse(input);
 
-    // 2. Get site and validate domain (API key already validated in middleware)
+    // 2. Get site and validate domain
     const site = await this.siteRepo.findById(siteId);
     if (!site) throw Errors.siteNotFound();
 
-    const siteDomain = new URL(site.url).hostname;
-    // Allow localhost for development
-    if (
-      requestDomain !== siteDomain &&
-      requestDomain !== 'localhost' &&
-      !requestDomain.startsWith('localhost:')
-    ) {
-      throw Errors.widgetDomainMismatch(requestDomain, siteDomain);
-    }
+    this.validateDomain(requestDomain, site.url);
 
-    // 4. Check rate limits
-    const sessionLimit = await this.rateLimitService.checkSessionLimit(
+    // 3. Check rate limits
+    await this.checkRateLimits(validated.sessionId, site.id, ipAddress);
+
+    // 4. Upsert session
+    await this.upsertSession(
       validated.sessionId,
-      site.id
+      site.id,
+      ipAddress,
+      validated.userEmail,
     );
-    if (!sessionLimit.allowed) {
-      const retryAfter = Math.ceil(
-        (sessionLimit.resetAt.getTime() - Date.now()) / 1000
-      );
-      throw Errors.widgetSessionLimit(retryAfter);
-    }
 
-    const ipLimit = await this.rateLimitService.checkIpLimit(ipAddress);
-    if (!ipLimit.allowed) {
-      const retryAfter = Math.ceil(
-        (ipLimit.resetAt.getTime() - Date.now()) / 1000
-      );
-      throw Errors.widgetIpLimit(retryAfter);
-    }
-
-    // 5. Upsert widget session
-    const ipHashSecret = process.env.IP_HASH_SECRET || 'default-secret';
-    const ipHash = crypto
-      .createHash('sha256')
-      .update(ipAddress + ipHashSecret)
-      .digest('hex');
-    await this.sessionRepo.upsert({
-      id: validated.sessionId,
-      siteId: site.id,
-      ipAddressHash: ipHash,
-      userEmail: validated.userEmail,
-    });
-
-    // 6. Search knowledge base
+    // 5. Search knowledge base
     const searchResult = await this.searchService.search(
       site.id,
       validated.message,
-      site.similarityThreshold
+      site.similarityThreshold,
     );
 
-    // 7. If no answer found
+    // 6. Handle no answer from knowledge base
     if (!searchResult.hasAnswer) {
-      const unansweredQuestion = await this.unansweredRepo.create({
-        siteId: site.id,
-        sessionId: validated.sessionId,
-        userEmail: validated.userEmail,
-        question: validated.message,
-        bestMatchScore: searchResult.bestScore,
-        timestamp: new Date(),
-      });
-
-      // Increment rate limit counters
-      await this.rateLimitService.incrementSession(
+      return this.handleUnanswered(
+        site.id,
         validated.sessionId,
-        site.id
+        validated.userEmail,
+        validated.message,
+        searchResult.bestScore,
+        ipAddress,
+        startTime,
       );
-      await this.rateLimitService.incrementIp(ipAddress);
-      await this.sessionRepo.incrementMessageCount(validated.sessionId);
-
-      return {
-        response:
-          "I don't have enough information to answer this question. Would you like to leave your email so the team can help you?",
-        responseTime: Date.now() - startTime,
-        canProvideEmail: true,
-        unansweredQuestionId: unansweredQuestion.id,
-      };
     }
 
-    // 8. Generate AI response
+    // 7. Generate AI response
     const chatResponse = await this.chatService.generateResponse(
       validated.message,
       searchResult.chunks,
       site.allowGeneralKnowledge,
-      site.name
+      site.name,
     );
+
+    // 8. If AI cannot provide answer
+    if (chatResponse.response === 'noAnswer') {
+      return this.handleUnanswered(
+        site.id,
+        validated.sessionId,
+        validated.userEmail,
+        validated.message,
+        searchResult.bestScore,
+        ipAddress,
+        startTime,
+      );
+    }
 
     // 9. Save chat message
     const chatMessage = await this.chatMessageRepo.create({
@@ -151,15 +119,107 @@ export class ProcessChatMessageUseCase {
     });
 
     // 10. Increment rate limit counters
-    await this.rateLimitService.incrementSession(validated.sessionId, site.id);
-    await this.rateLimitService.incrementIp(ipAddress);
-    await this.sessionRepo.incrementMessageCount(validated.sessionId);
+    await this.incrementLimits(validated.sessionId, siteId, ipAddress);
 
     return {
       response: chatResponse.response,
       responseTime: Date.now() - startTime,
       messageId: chatMessage.id,
       sources: chatResponse.sources,
+    };
+  }
+
+  private validateDomain(requestDomain: string, siteUrl: string) {
+    const siteDomain = new URL(siteUrl).hostname;
+    if (
+      requestDomain !== siteDomain &&
+      requestDomain !== 'localhost' &&
+      !requestDomain.startsWith('localhost:')
+    ) {
+      throw Errors.widgetDomainMismatch(requestDomain, siteDomain);
+    }
+  }
+
+  private async checkRateLimits(
+    sessionId: string,
+    siteId: string,
+    ipAddress: string,
+  ) {
+    const sessionLimit = await this.rateLimitService.checkSessionLimit(
+      sessionId,
+      siteId,
+    );
+    if (!sessionLimit.allowed) {
+      const retryAfter = Math.ceil(
+        (sessionLimit.resetAt.getTime() - Date.now()) / 1000,
+      );
+      throw Errors.widgetSessionLimit(retryAfter);
+    }
+
+    const ipLimit = await this.rateLimitService.checkIpLimit(ipAddress);
+    if (!ipLimit.allowed) {
+      const retryAfter = Math.ceil(
+        (ipLimit.resetAt.getTime() - Date.now()) / 1000,
+      );
+      throw Errors.widgetIpLimit(retryAfter);
+    }
+  }
+
+  private async upsertSession(
+    sessionId: string,
+    siteId: string,
+    ipAddress: string,
+    userEmail?: string,
+  ) {
+    const ipHashSecret = process.env.IP_HASH_SECRET || 'default-secret';
+    const ipHash = crypto
+      .createHash('sha256')
+      .update(ipAddress + ipHashSecret)
+      .digest('hex');
+    await this.sessionRepo.upsert({
+      id: sessionId,
+      siteId,
+      ipAddressHash: ipHash,
+      userEmail,
+    });
+  }
+
+  private async incrementLimits(
+    sessionId: string,
+    siteId: string,
+    ipAddress: string,
+  ) {
+    await this.rateLimitService.incrementSession(sessionId, siteId);
+    await this.rateLimitService.incrementIp(ipAddress);
+    await this.sessionRepo.incrementMessageCount(sessionId);
+  }
+
+  private async handleUnanswered(
+    siteId: string,
+    sessionId: string,
+    userEmail: string | undefined,
+    question: string,
+    bestScore: number,
+    ipAddress: string,
+    startTime: number,
+  ): Promise<IChatResult> {
+    const unansweredQuestion = await this.unansweredRepo.create({
+      siteId,
+      sessionId,
+      userEmail,
+      question,
+      bestMatchScore: bestScore,
+      timestamp: new Date(),
+    });
+
+    await this.incrementLimits(sessionId, siteId, ipAddress);
+
+    return {
+      response:
+        "I don't have enough information to answer this question. Would you like to leave your email so the team can help you?",
+      responseTime: Date.now() - startTime,
+      canProvideEmail: true,
+      unansweredQuestionId: unansweredQuestion.id,
     };
   }
 }
