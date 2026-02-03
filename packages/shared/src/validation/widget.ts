@@ -25,8 +25,5 @@ export const chatSettingsInputSchema = z.object({
   maxMessagesPerSession: z.number().min(1).max(100).optional(),
 });
 
-// Types inferred from schemas
-export type IWidgetChatRequest = z.infer<typeof widgetChatRequestSchema>;
-export type IWidgetRatingRequest = z.infer<typeof widgetRatingRequestSchema>;
-export type IWidgetEmailRequest = z.infer<typeof widgetEmailRequestSchema>;
+// Types inferred from schemas — exported from types/dto/requests/ to avoid duplicate exports
 export type IChatSettingsInput = z.infer<typeof chatSettingsInputSchema>;

@@ -13,16 +13,8 @@ import type { IChatService } from '@/domain/services/chat';
 import {
   widgetChatRequestSchema,
   type IWidgetChatRequest,
+  type IChatResult,
 } from '@ai-onboarding/shared';
-
-export interface IChatResult {
-  response: string;
-  responseTime: number;
-  messageId?: string;
-  sources?: Array<{ pageUrl: string; title?: string }>;
-  canProvideEmail?: boolean;
-  unansweredQuestionId?: string;
-}
 
 @injectable()
 export class ProcessChatMessageUseCase {

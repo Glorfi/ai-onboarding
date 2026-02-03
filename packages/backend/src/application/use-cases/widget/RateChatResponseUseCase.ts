@@ -7,11 +7,8 @@ import type {
 import {
   widgetRatingRequestSchema,
   type IWidgetRatingRequest,
+  type IRateResponseOutput,
 } from '@ai-onboarding/shared';
-
-export interface IRateResponseOutput {
-  success: boolean;
-}
 
 @injectable()
 export class RateChatResponseUseCase {

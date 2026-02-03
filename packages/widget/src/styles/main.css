@@ -1,0 +1,134 @@
+@import "tailwindcss" important;
+@source "../**/*.{ts,tsx}";
+
+@theme inline {
+  --spacing: var(--spacing);
+  --color-primary: var(--widget-primary-color);
+  --color-primary-hover: var(--widget-primary-hover);
+  --color-widget-bg: var(--widget-bg-color);
+  --color-widget-header-bg: var(--widget-header-bg);
+  --color-widget-text: var(--widget-text-color);
+  --color-widget-text-secondary: var(--widget-text-secondary);
+  --color-widget-border: var(--widget-border-color);
+  --color-widget-user-msg-bg: var(--widget-user-message-bg);
+  --color-widget-user-msg-text: var(--widget-user-message-text);
+  --color-widget-bot-msg-bg: var(--widget-bot-message-bg);
+  --color-widget-bot-msg-text: var(--widget-bot-message-text);
+  --font-family-widget: var(--widget-font-family);
+  --font-size-widget-base: var(--widget-font-size-base);
+  --font-size-widget-sm: var(--widget-font-size-small);
+  --radius-widget: var(--widget-border-radius);
+  --radius-widget-sm: var(--widget-border-radius-small);
+  --radius-widget-message: var(--widget-message-radius);
+  --shadow-widget: var(--widget-shadow);
+  --shadow-widget-lg: var(--widget-shadow-lg);
+}
+
+/*
+ * Widget reset — NOT inside @layer so it competes with host-site styles normally.
+ * Uses #id selector for high specificity (0,1,0,1) to beat most host rules.
+ * Tailwind utilities have !important (via "important" above) so they always win over this reset.
+ */
+#onboarding-widget-root *,
+#onboarding-widget-root *::before,
+#onboarding-widget-root *::after {
+  box-sizing: border-box;
+  border: 0 solid var(--widget-border-color);
+  margin: 0;
+  padding: 0;
+}
+
+#onboarding-widget-root button,
+#onboarding-widget-root input,
+#onboarding-widget-root textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+#onboarding-widget-root button {
+  cursor: pointer;
+}
+
+#onboarding-widget-root h1,
+#onboarding-widget-root h2,
+#onboarding-widget-root h3,
+#onboarding-widget-root p {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+/* Default values — scoped to widget root */
+#onboarding-widget-root {
+  --spacing: 0.25rem;
+  --widget-primary-color: #3b82f6;
+  --widget-primary-hover: #2563eb;
+  --widget-bg-color: #ffffff;
+  --widget-header-bg: #f9fafb;
+  --widget-text-color: #111827;
+  --widget-text-secondary: #6b7280;
+  --widget-border-color: #e5e7eb;
+  --widget-user-message-bg: #3b82f6;
+  --widget-user-message-text: #ffffff;
+  --widget-bot-message-bg: #f3f4f6;
+  --widget-bot-message-text: #111827;
+  --widget-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --widget-font-size-base: 14px;
+  --widget-font-size-small: 12px;
+  --widget-border-radius: 12px;
+  --widget-border-radius-small: 8px;
+  --widget-message-radius: 16px;
+  --widget-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --widget-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+  font-family: var(--widget-font-family);
+  font-size: var(--widget-font-size-base);
+  line-height: 1.5;
+  color: var(--widget-text-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Animations */
+@keyframes widget-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes widget-slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes widget-slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes widget-bounce-in {
+  0% { opacity: 0; transform: scale(0.3); }
+  50% { opacity: 1; transform: scale(1.05); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+@keyframes widget-typing-dot {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+
+.widget-animate-fade-in {
+  animation: widget-fade-in 0.2s ease-out;
+}
+
+.widget-animate-slide-up {
+  animation: widget-slide-up 0.3s ease-out;
+}
+
+.widget-animate-bounce-in {
+  animation: widget-bounce-in 0.4s ease-out;
+}

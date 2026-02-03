@@ -4,12 +4,8 @@ import type { IUnansweredQuestionRepository } from '@/domain/repositories';
 import {
   widgetEmailRequestSchema,
   type IWidgetEmailRequest,
+  type ISaveEmailOutput,
 } from '@ai-onboarding/shared';
-
-export interface ISaveEmailOutput {
-  success: boolean;
-  message: string;
-}
 
 @injectable()
 export class SaveEmailForUnansweredUseCase {

@@ -24,14 +24,13 @@ This document specifies the implementation of an AI-powered chat widget that pro
 
 3. **Fallback Strategy**
    - **Default (MVP):** Only knowledge base answers
-   - **Optional (admin toggle):** Allow general Claude knowledge with disclaimer
+   - **Optional (admin toggle):** Allow general knowledge with disclaimer
    - Unanswered questions saved for site owner review
 
 4. **User Identification**
    - Anonymous by default (sessionId in localStorage)
    - Optional email collection:
      - When answer not found
-     - Site owner can add custom identification via JS API: `widget.setUser({ email })`
 
 5. **Rate Limiting & Abuse Protection**
    - **Per Session:** 15 messages per session (24h reset)
