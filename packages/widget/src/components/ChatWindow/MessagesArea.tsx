@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'preact/hooks';
 import { Message } from './Message';
 import { TypingIndicator } from './TypingIndicator';
 import type { Message as MessageType } from '@/types';
+import s from './MessagesArea.module.css';
 
 interface MessagesAreaProps {
   messages: MessageType[];
@@ -24,7 +25,7 @@ export function MessagesArea({ messages, isLoading, onRate, onEmailSubmit }: Mes
   return (
     <div
       ref={scrollRef}
-      class="flex-1 overflow-y-auto px-4 py-4"
+      class={s.area}
       role="log"
       aria-label="Chat messages"
       aria-live="polite"

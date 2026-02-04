@@ -1,10 +1,10 @@
 import { useRef, useEffect } from 'preact/hooks';
-import { cn } from '@/utils/cn';
 import { Header } from './Header';
 import { MessagesArea } from './MessagesArea';
 import { InputArea } from './InputArea';
 import { Footer } from './Footer';
 import type { Message } from '@/types';
+import s from './ChatWindow.module.css';
 
 interface ChatWindowProps {
   messages: Message[];
@@ -52,17 +52,7 @@ export function ChatWindow({
       role="dialog"
       aria-modal="true"
       aria-labelledby="widget-chat-title"
-      class={cn(
-        'fixed z-[9999]',
-        'bg-widget-bg rounded-widget shadow-widget-lg',
-        'flex flex-col overflow-hidden',
-        'border border-widget-border',
-        'widget-animate-slide-up',
-        // Desktop
-        'w-[400px] h-[600px] right-5 bottom-24',
-        // Mobile: fullscreen
-        'max-[500px]:w-full max-[500px]:h-full max-[500px]:inset-0 max-[500px]:rounded-none max-[500px]:bottom-0 max-[500px]:right-0',
-      )}
+      class={s.window}
     >
       <Header onClose={onClose} />
       <MessagesArea

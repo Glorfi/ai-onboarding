@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'preact/hooks';
-import { cn } from '@/utils/cn';
+import s from './InputArea.module.css';
 
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -46,29 +46,26 @@ export function InputArea({ onSend, isLoading, isDisabled, error, onClearError }
   const showCounter = charsRemaining <= 200;
 
   return (
-    <div class="border-t border-widget-border p-3 bg-widget-bg">
+    <div class={s.container}>
       {/* Error bar */}
       {error && (
-        <div
-          class="mb-2 p-2 bg-red-50 border border-red-200 rounded-widget-sm text-xs text-red-600 flex justify-between items-center"
-          role="alert"
-        >
+        <div class={s.errorBar} role="alert">
           <span>{error}</span>
           <button
             type="button"
             onClick={onClearError}
-            class="text-red-400 hover:text-red-600 ml-2 shrink-0"
+            class={s.errorDismiss}
             aria-label="Dismiss error"
           >
-            <svg class="w-3.5 h-3.5" viewBox="0 0 14 14" fill="currentColor">
+            <svg class={s.errorDismissIcon} viewBox="0 0 14 14" fill="currentColor">
               <path d="M13.3 0.7a1 1 0 0 0-1.4 0L7 5.6 2.1 0.7a1 1 0 0 0-1.4 1.4L5.6 7 0.7 11.9a1 1 0 1 0 1.4 1.4L7 8.4l4.9 4.9a1 1 0 0 0 1.4-1.4L8.4 7l4.9-4.9a1 1 0 0 0 0-1.4z" />
             </svg>
           </button>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} class="flex items-end gap-2">
-        <div class="flex-1 relative">
+      <form onSubmit={handleSubmit} class={s.form}>
+        <div class={s.inputWrapper}>
           <textarea
             ref={textareaRef}
             value={message}
@@ -81,22 +78,12 @@ export function InputArea({ onSend, isLoading, isDisabled, error, onClearError }
             disabled={isDisabled}
             maxLength={MAX_MESSAGE_LENGTH}
             rows={1}
-            class={cn(
-              'w-full resize-none px-3 py-2 text-sm rounded-xl',
-              'border border-widget-border bg-widget-header-bg',
-              'focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
-              'placeholder:text-widget-text-secondary',
-              'text-widget-text',
-            )}
+            class={s.textarea}
             aria-label="Message input"
           />
           {showCounter && (
             <span
-              class={cn(
-                'absolute right-2 bottom-1 text-[10px]',
-                charsRemaining <= 50 ? 'text-red-500' : 'text-widget-text-secondary',
-              )}
+              class={`${s.counter} ${charsRemaining <= 50 ? s.counterWarning : ''}`}
             >
               {charsRemaining}
             </span>
@@ -106,22 +93,16 @@ export function InputArea({ onSend, isLoading, isDisabled, error, onClearError }
         <button
           type="submit"
           disabled={!canSend}
-          class={cn(
-            'p-2.5 rounded-xl bg-primary text-white',
-            'hover:bg-primary-hover',
-            'disabled:opacity-50 disabled:cursor-not-allowed',
-            'transition-colors shrink-0',
-            'focus:outline-none focus:ring-2 focus:ring-primary/30',
-          )}
+          class={s.sendButton}
           aria-label="Send message"
         >
           {isLoading ? (
-            <svg class="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            <svg class={s.spinner} viewBox="0 0 24 24" fill="none">
+              <circle class={s.spinnerTrack} cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class={s.spinnerHead} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
           ) : (
-            <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+            <svg class={s.sendIcon} viewBox="0 0 20 20" fill="currentColor">
               <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
             </svg>
           )}

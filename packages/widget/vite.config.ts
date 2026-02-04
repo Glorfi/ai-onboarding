@@ -1,11 +1,10 @@
 import { defineConfig } from 'vite';
 import preact from '@preact/preset-vite';
-import tailwindcss from '@tailwindcss/vite';
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [preact(), tailwindcss(), cssInjectedByJsPlugin()],
+  plugins: [preact(), cssInjectedByJsPlugin()],
   build: {
     lib: {
       entry: 'src/index.tsx',
@@ -47,7 +46,7 @@ export default defineConfig({
   },
   preview: {
     port: 5172,
-    host: '0.0.0.0', // чтобы был доступ с любого хоста
-    allowedHosts: ['unpervasive-densus-yan.ngrok-free.dev'], // разрешаем ngrok
+    host: '0.0.0.0',
+    allowedHosts: ['unpervasive-densus-yan.ngrok-free.dev'],
   },
 });

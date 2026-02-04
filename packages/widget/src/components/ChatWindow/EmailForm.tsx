@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { cn } from '@/utils/cn';
+import s from './EmailForm.module.css';
 
 interface EmailFormProps {
   questionId: string;
@@ -32,26 +32,17 @@ export function EmailForm({ questionId, onSubmit }: EmailFormProps) {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      class="mt-3 p-3 bg-widget-bg rounded-widget-sm border border-widget-border"
-    >
-      <label class="block text-xs text-widget-text-secondary mb-1.5">
+    <form onSubmit={handleSubmit} class={s.form}>
+      <label class={s.label}>
         Enter your email so our team can help you:
       </label>
-      <div class="flex gap-2">
+      <div class={s.row}>
         <input
           type="email"
           value={email}
           onInput={(e) => { setEmail((e.target as HTMLInputElement).value); setError(null); }}
           placeholder="you@example.com"
-          class={cn(
-            'flex-1 px-3 py-2 text-sm rounded-widget-sm',
-            'border bg-widget-bg text-widget-text',
-            'focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary',
-            'disabled:opacity-50 disabled:cursor-not-allowed',
-            error ? 'border-red-400' : 'border-widget-border',
-          )}
+          class={`${s.input} ${error ? s.inputError : ''}`}
           disabled={isSubmitting}
           aria-label="Email address"
           aria-invalid={!!error}
@@ -59,18 +50,13 @@ export function EmailForm({ questionId, onSubmit }: EmailFormProps) {
         <button
           type="submit"
           disabled={isSubmitting || !email}
-          class={cn(
-            'px-4 py-2 text-sm font-medium text-white rounded-widget-sm',
-            'bg-primary hover:bg-primary-hover',
-            'disabled:opacity-50 disabled:cursor-not-allowed',
-            'transition-colors',
-          )}
+          class={s.submitButton}
         >
           {isSubmitting ? '...' : 'Submit'}
         </button>
       </div>
       {error && (
-        <p class="text-xs text-red-500 mt-1" role="alert">{error}</p>
+        <p class={s.errorText} role="alert">{error}</p>
       )}
     </form>
   );

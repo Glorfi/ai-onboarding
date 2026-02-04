@@ -1,0 +1,50 @@
+.container {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 92px;
+  z-index: 9999;
+  background-color: var(--widget-bg-color);
+  border-radius: var(--widget-border-radius);
+  box-shadow: var(--widget-shadow-lg);
+  padding: 1rem;
+  max-width: 280px;
+  animation: widget-slide-up 0.3s ease-out;
+  border: 1px solid var(--widget-border-color);
+  pointer-events: auto;
+}
+
+.dismissButton {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--widget-text-secondary);
+  border-radius: 9999px;
+  transition: color 150ms, background-color 150ms;
+}
+
+.dismissButton:hover {
+  color: var(--widget-text-color);
+  background-color: color-mix(in srgb, var(--widget-border-color) 50%, transparent);
+}
+
+.dismissIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.openButton {
+  text-align: left;
+  width: 100%;
+  padding-right: 1rem;
+}
+
+.text {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--widget-text-color);
+}
