@@ -19,6 +19,7 @@ export function InputArea({ onSend, isLoading, isDisabled, error, onClearError }
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
+      textarea.style.minHeight = "45px"
       textarea.style.height = 'auto';
       textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
     }

@@ -1,16 +1,16 @@
 .container {
   border-top: 1px solid var(--widget-border-color);
-  padding: 0.75rem;
+  padding: 12px;
   background-color: var(--widget-bg-color);
 }
 
 .errorBar {
-  margin-bottom: 0.5rem;
-  padding: 0.5rem;
+  margin-bottom: 8px;
+  padding: 8px;
   background-color: #fef2f2;
   border: 1px solid #fecaca;
   border-radius: var(--widget-border-radius-small);
-  font-size: 0.75rem;
+  font-size: var(--widget-font-size-small);
   line-height: 1rem;
   color: #dc2626;
   display: flex;
@@ -20,7 +20,7 @@
 
 .errorDismiss {
   color: #f87171;
-  margin-left: 0.5rem;
+  margin-left: 8px;
   flex-shrink: 0;
   transition: color 150ms;
 }
@@ -30,32 +30,37 @@
 }
 
 .errorDismissIcon {
-  width: 0.875rem;
-  height: 0.875rem;
+  width: 14px;
+  height: 14px;
 }
 
 .form {
   display: flex;
-  align-items: flex-end;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .inputWrapper {
   flex: 1 1 0%;
   position: relative;
+  min-height: 45px;
 }
 
 .textarea {
   width: 100%;
   resize: none;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
+  padding: 8px 12px;
+  font-size: var(--widget-font-size-small);
   line-height: 1.25rem;
-  border-radius: 0.75rem;
+  border-radius: 12px;
   border: 1px solid var(--widget-border-color);
   background-color: var(--widget-header-bg);
   color: var(--widget-text-color);
-  transition: border-color 150ms, box-shadow 150ms;
+  transition:
+    border-color 150ms,
+    box-shadow 150ms;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 .textarea::placeholder {
@@ -64,7 +69,8 @@
 
 .textarea:focus {
   outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--widget-primary-color) 30%, transparent);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--widget-primary-color) 30%, transparent);
   border-color: var(--widget-primary-color);
 }
 
@@ -75,8 +81,8 @@
 
 .counter {
   position: absolute;
-  right: 0.5rem;
-  bottom: 0.25rem;
+  right: 8px;
+  bottom: 4px;
   font-size: 10px;
   color: var(--widget-text-secondary);
 }
@@ -86,8 +92,10 @@
 }
 
 .sendButton {
-  padding: 0.625rem;
-  border-radius: 0.75rem;
+  width: 45px;
+  height: 45px;
+  padding: 10px;
+  border-radius: 12px;
   background-color: var(--widget-primary-color);
   color: #ffffff;
   flex-shrink: 0;
@@ -105,17 +113,18 @@
 
 .sendButton:focus {
   outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--widget-primary-color) 30%, transparent);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--widget-primary-color) 30%, transparent);
 }
 
 .sendIcon {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 20px;
+  height: 20px;
 }
 
 .spinner {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 20px;
+  height: 20px;
   animation: widget-spin 1s linear infinite;
 }
 

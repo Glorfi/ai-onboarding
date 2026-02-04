@@ -40,18 +40,18 @@
 }
 
 /* ── Scoped reset ──────────────────────────────────────────────────── */
-/* #onboarding-widget-root *,
-#onboarding-widget-root *::before,
-#onboarding-widget-root *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   border: 0 solid var(--widget-border-color);
   margin: 0;
   padding: 0;
-} */
+}
 
-/* #onboarding-widget-root button,
-#onboarding-widget-root input,
-#onboarding-widget-root textarea {
+button,
+input,
+textarea {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
@@ -61,15 +61,13 @@
   appearance: none;
 }
 
-
-
-#onboarding-widget-root h1,
-#onboarding-widget-root h2,
-#onboarding-widget-root h3,
-#onboarding-widget-root p {
+h1,
+h2,
+h3,
+p {
   font-size: inherit;
   font-weight: inherit;
-} */
+}
 
 /* ── Keyframes ─────────────────────────────────────────────────────── */
 @keyframes widget-fade-in {

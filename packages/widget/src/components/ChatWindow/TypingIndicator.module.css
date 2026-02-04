@@ -1,13 +1,13 @@
 .container {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .avatar {
-  width: 2rem;
-  height: 2rem;
+  width: 32px;
+  height: 32px;
   border-radius: 9999px;
   background-color: var(--widget-primary-color);
   display: flex;
@@ -17,8 +17,8 @@
 }
 
 .avatarIcon {
-  width: 1rem;
-  height: 1rem;
+  width: 16px;
+  height: 16px;
   color: #ffffff;
 }
 
@@ -26,7 +26,7 @@
   background-color: var(--widget-bot-message-bg);
   border-radius: var(--widget-message-radius);
   border-top-left-radius: 0.125rem;
-  padding: 0.75rem 1rem;
+  padding: 12px 32px;
 }
 
 .dots {

@@ -1,10 +1,41 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import preact from '@preact/preset-vite';
-import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 import path from 'path';
 
+/**
+ * Collects all CSS produced by the build, removes .css assets,
+ * and prepends `window.__WIDGET_CSS__ = "…"` to the entry JS chunk.
+ * This lets us inject the CSS into a Shadow DOM at runtime.
+ */
+function cssToGlobalVarPlugin(): Plugin {
+  return {
+    name: 'css-to-global-var',
+    apply: 'build',
+    enforce: 'post',
+    generateBundle(_, bundle) {
+      let css = '';
+
+      // Collect and remove CSS assets
+      for (const [fileName, chunk] of Object.entries(bundle)) {
+        if (chunk.type === 'asset' && fileName.endsWith('.css')) {
+          css += chunk.source;
+          delete bundle[fileName];
+        }
+      }
+
+      // Prepend CSS string to the entry JS chunk
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type === 'chunk' && chunk.isEntry) {
+          chunk.code =
+            `window.__WIDGET_CSS__=${JSON.stringify(css)};\n` + chunk.code;
+        }
+      }
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [preact(), cssInjectedByJsPlugin()],
+  plugins: [preact(), cssToGlobalVarPlugin()],
   build: {
     lib: {
       entry: 'src/index.tsx',

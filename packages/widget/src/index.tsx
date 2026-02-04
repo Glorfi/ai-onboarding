@@ -3,10 +3,15 @@ import { App } from '@/components/App';
 import type { WidgetConfig } from '@/types';
 import '@/styles/main.css';
 
+declare global {
+  interface Window {
+    __WIDGET_CSS__?: string;
+  }
+}
+
 function initWidget(): void {
   const script = document.currentScript as HTMLScriptElement | null;
-  console.log("Пиздца");
-  
+
   if (!script) {
     console.error('[OnboardingWidget] Script element not found');
     return;
@@ -21,21 +26,36 @@ function initWidget(): void {
   const config: WidgetConfig = {
     apiKey,
     apiUrl: script.getAttribute('data-api-url') || window.location.origin,
-    teaserDelay: parseInt(script.getAttribute('data-teaser-delay') || '3000', 10),
+    teaserDelay: parseInt(
+      script.getAttribute('data-teaser-delay') || '3000',
+      10,
+    ),
     companyName: script.getAttribute('data-company-name') || undefined,
   };
 
-  // Create root container
-  const container = document.createElement('div');
-  container.id = 'onboarding-widget-root';
-  container.style.cssText = 'position: fixed; z-index: 9999; pointer-events: none;';
-  document.body.appendChild(container);
+  // Create host element
+  const host = document.createElement('div');
+  host.id = 'onboarding-widget-host';
+  document.body.appendChild(host);
 
-  // Render widget
-  render(<App config={config} />, container);
+  // Attach Shadow DOM for style isolation
+  const shadow = host.attachShadow({ mode: 'open' });
 
-  // Make all children receive pointer events
-  container.style.pointerEvents = 'auto';
+  // Inject CSS collected by cssToGlobalVarPlugin into shadow root
+  if (window.__WIDGET_CSS__) {
+    const style = document.createElement('style');
+    style.textContent = window.__WIDGET_CSS__;
+    shadow.appendChild(style);
+  }
+
+  // Create inner root for CSS variable selectors to work
+  const root = document.createElement('div');
+  root.id = 'onboarding-widget-root';
+  root.className = 'onboarding-widget-root';
+  shadow.appendChild(root);
+
+  // Render widget inside Shadow DOM
+  render(<App config={config} />, root);
 }
 
 // Auto-init

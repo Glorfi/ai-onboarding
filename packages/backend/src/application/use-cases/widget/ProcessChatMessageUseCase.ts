@@ -47,10 +47,10 @@ export class ProcessChatMessageUseCase {
     const site = await this.siteRepo.findById(siteId);
     if (!site) throw Errors.siteNotFound();
 
-    this.validateDomain(requestDomain, site.url);
+    // this.validateDomain(requestDomain, site.url);
 
-    // 3. Check rate limits
-    await this.checkRateLimits(validated.sessionId, site.id, ipAddress);
+    // // 3. Check rate limits
+    // await this.checkRateLimits(validated.sessionId, site.id, ipAddress);
 
     // 4. Upsert session
     await this.upsertSession(

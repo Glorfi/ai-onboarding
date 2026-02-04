@@ -44,7 +44,7 @@
 }
 
 .text {
-  font-size: 0.875rem;
+  font-size: var(--widget-font-size-small);
   line-height: 1.25rem;
   color: var(--widget-text-color);
 }

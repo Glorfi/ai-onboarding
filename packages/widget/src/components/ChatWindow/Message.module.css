@@ -1,7 +1,7 @@
 .row {
   display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .rowBot {
@@ -18,8 +18,8 @@
 }
 
 .avatar {
-  width: 2rem;
-  height: 2rem;
+  width: 32px;
+  height: 32px;
   border-radius: 9999px;
   background-color: var(--widget-primary-color);
   display: flex;
@@ -29,8 +29,8 @@
 }
 
 .avatarIcon {
-  width: 1rem;
-  height: 1rem;
+  width: 16px;
+  height: 16px;
   color: #ffffff;
 }
 
@@ -45,7 +45,7 @@
 }
 
 .bubble {
-  padding: 0.75rem 1rem;
+  padding: 12px 16px;
   overflow-wrap: break-word;
 }
 
@@ -68,21 +68,21 @@
 }
 
 .messageText {
-  font-size: 0.875rem;
+  font-size: var(--widget-font-size-small);
   line-height: 1.25rem;
   white-space: pre-wrap;
 }
 
 .sources {
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px solid color-mix(in srgb, var(--widget-border-color) 50%, transparent);
 }
 
 .sourceLabel {
   font-size: 11px;
   color: var(--widget-text-secondary);
-  margin-bottom: 0.125rem;
+  margin-bottom: 2px;
 }
 
 .sourceLink {
@@ -107,5 +107,5 @@
 .timestamp {
   font-size: 10px;
   color: var(--widget-text-secondary);
-  margin-top: 0.25rem;
+  margin-top: 2px;
 }
