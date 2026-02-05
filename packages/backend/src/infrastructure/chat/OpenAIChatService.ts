@@ -67,10 +67,18 @@ export class OpenAIChatService implements IChatService {
       max_tokens: MAX_TOKENS,
     });
 
-    const sources = chunks.map((chunk) => ({
-      pageUrl: chunk.pageUrl,
-      title: chunk.heading,
-    }));
+    const seenPageUrls = new Set();
+
+    const sources = chunks
+      .map((chunk) => ({
+        pageUrl: chunk.pageUrl,
+        title: chunk.heading,
+      }))
+      .filter((source) => {
+        if (seenPageUrls.has(source.pageUrl)) return false;
+        seenPageUrls.add(source.pageUrl);
+        return true;
+      });
 
     return {
       response: response.choices[0].message.content || '',
