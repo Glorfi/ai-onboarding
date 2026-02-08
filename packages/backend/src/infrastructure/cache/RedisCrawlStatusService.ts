@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import type { ICrawlProgress } from '@ai-onboarding/shared';
+import type { ICrawlProgress } from '@/domain/models';
 import { DEFAULTS } from '@ai-onboarding/shared';
 import type { ICrawlStatusService } from '../../domain/services/cache';
 import { getRedisClient } from './RedisClient';

@@ -1,10 +1,10 @@
 import { mainApi } from '@/shared/api';
 import { API_PATHS } from '@/shared/config';
-import type { ICreateSiteResponse } from '@ai-onboarding/shared';
+import type { IGetUserSitesResponse } from '@ai-onboarding/shared';
 
 export const getMySitesApi = mainApi.injectEndpoints({
   endpoints: (build) => ({
-    getMySites: build.query<ICreateSiteResponse, void>({
+    getMySites: build.query<IGetUserSitesResponse, void>({
       query: () => ({
         url: API_PATHS.SITES_MINE,
         method: 'GET',

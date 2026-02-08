@@ -1,9 +1,9 @@
-import type { ICrawlProgress } from '@ai-onboarding/shared';
+import type { ICrawlProgressDTO } from '@ai-onboarding/shared';
 import { Progress } from '@/shared/ui';
 import { calculateCrawlProgress } from '../lib';
 
 interface CrawlProgressProps {
-  progress: ICrawlProgress;
+  progress: ICrawlProgressDTO;
 }
 
 export function CrawlProgress({ progress }: CrawlProgressProps) {

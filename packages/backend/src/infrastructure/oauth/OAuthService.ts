@@ -6,7 +6,7 @@ import {
   IOAuthAccount,
   IUserPublic,
   OAuthProvider,
-} from '@ai-onboarding/shared';
+} from '@/domain/models';
 import { Errors } from '@/domain/errors';
 
 export interface IOAuthSignInResult {

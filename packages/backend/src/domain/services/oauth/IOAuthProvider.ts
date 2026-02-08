@@ -1,4 +1,4 @@
-import { IOAuthUserProfile, OAuthProvider } from '@ai-onboarding/shared';
+import { IOAuthUserProfile, OAuthProvider } from '@/domain/models';
 
 export interface IOAuthTokens {
   accessToken: string;

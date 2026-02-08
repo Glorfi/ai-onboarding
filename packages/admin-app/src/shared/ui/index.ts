@@ -14,3 +14,5 @@ export * from './sidebar';
 export * from './tooltip';
 export * from './separator';
 export * from './skeleton';
+export * from './tabs';
+export * from './kbd';

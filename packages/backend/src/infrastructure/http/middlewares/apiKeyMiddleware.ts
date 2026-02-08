@@ -3,7 +3,7 @@ import { container } from 'tsyringe';
 
 import type { IApiKeyRepository } from '@/domain/repositories';
 import { Errors } from '@/domain/errors';
-import { IApiKey } from '@ai-onboarding/shared';
+import { IApiKey } from '@/domain/models';
 import { getRedisClient } from '@/infrastructure/cache/RedisClient';
 
 const CACHE_KEY_PREFIX = 'apikey:';

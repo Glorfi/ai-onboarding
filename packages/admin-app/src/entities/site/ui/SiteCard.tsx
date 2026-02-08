@@ -1,4 +1,4 @@
-import type { ISite } from '@ai-onboarding/shared';
+import type { ISiteDTO, ISiteWithApiKeyDTO } from '@ai-onboarding/shared';
 import {
   Card,
   CardHeader,
@@ -6,18 +6,27 @@ import {
   CardDescription,
   CardContent,
   CardAction,
+  CardFooter,
+  Button,
 } from '@/shared/ui';
 import { SiteStatusBadge } from './SiteStatusBadge';
 import { formatDomain, formatDate } from '../lib';
+import ApiKeyBlock from '@/entities/api-key/ui/ApiKey';
+import { InstallDialog } from './InstallDialog';
 
 interface SiteCardProps {
-  site: ISite;
+  site: ISiteWithApiKeyDTO;
   actionsSlot?: React.ReactNode;
   progressSlot?: React.ReactNode;
+  apiKeySlot?: React.ReactNode;
 }
 
 export function SiteCard(props: SiteCardProps) {
-  const { site, actionsSlot, progressSlot } = props;
+  const { site, actionsSlot, progressSlot, apiKeySlot } = props;
+  const widgetUrl = 'xyz';
+  const apiKey = { key: 'xyz' };
+  const apiUrl = 'fasdfasdf';
+  const scriptCode = `<script type="text/javascript" src="${widgetUrl}" data-api-key="${apiKey.key}" data-api-url="${apiUrl}"></script>`;
   return (
     <Card
       className="    flex flex-col
@@ -62,7 +71,13 @@ export function SiteCard(props: SiteCardProps) {
             Error: {site.errorMessage}
           </p>
         )}
+        {apiKeySlot && apiKeySlot}
       </CardContent>
+      <CardFooter>
+        {site.apiKey && site.status === 'active' && (
+          <InstallDialog site={site} />
+        )}
+      </CardFooter>
     </Card>
   );
 }

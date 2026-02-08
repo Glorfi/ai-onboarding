@@ -1,9 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { IUserRepository } from '@/domain/repositories';
-import { JwtService, PasswordService } from '@/domain/services';
-import { IUser, IUserPublic } from '@/domain/models';
+import { JwtService } from '@/domain/services';
 import { Errors } from '@/domain/errors';
-import { registerInputSchema, IRegisterInput } from '@ai-onboarding/shared';
 
 export interface IRefreshOutput {
   accessToken: string;

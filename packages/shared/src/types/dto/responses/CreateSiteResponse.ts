@@ -1,5 +1,5 @@
-import type { ISite } from '../../entities/Site';
+import type { ISiteWithApiKeyDTO } from '../SiteDTO';
 
 export interface ICreateSiteResponse {
-  sites: ISite[];
+  site: ISiteWithApiKeyDTO;
 }

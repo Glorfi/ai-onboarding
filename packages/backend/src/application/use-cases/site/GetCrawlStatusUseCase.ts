@@ -1,8 +1,13 @@
 import { injectable, inject } from 'tsyringe';
 import { ISiteRepository } from '@/domain/repositories';
 import { ICrawlStatusService } from '@/domain/services/cache';
+import { ISite, ICrawlProgress } from '@/domain/models';
 import { Errors } from '@/domain/errors';
-import type { ICrawlStatusResponse } from '@ai-onboarding/shared';
+
+export interface IGetCrawlStatusOutput {
+  site: ISite;
+  progress: ICrawlProgress | null;
+}
 
 @injectable()
 export class GetCrawlStatusUseCase {
@@ -11,7 +16,7 @@ export class GetCrawlStatusUseCase {
     @inject('ICrawlStatusService') private statusService: ICrawlStatusService
   ) {}
 
-  async execute(userId: string, siteId: string): Promise<ICrawlStatusResponse> {
+  async execute(userId: string, siteId: string): Promise<IGetCrawlStatusOutput> {
     const site = await this.siteRepo.findById(siteId);
 
     if (!site) {
@@ -24,16 +29,6 @@ export class GetCrawlStatusUseCase {
 
     const progress = await this.statusService.getProgress(siteId);
 
-    return {
-      siteId: site.id,
-      status: site.status,
-      progress: progress || {
-        pagesDiscovered: 0,
-        pagesCrawled: 0,
-        pagesProcessed: 0,
-        errors: [],
-      },
-      errorMessage: site.errorMessage,
-    };
+    return { site, progress };
   }
 }

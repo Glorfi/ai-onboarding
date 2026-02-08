@@ -1,4 +1,4 @@
-import type { ICrawlProgress } from '@ai-onboarding/shared';
+import type { ICrawlProgress } from '@/domain/models';
 
 export interface ICrawlStatusService {
   setProgress(siteId: string, progress: ICrawlProgress): Promise<void>;

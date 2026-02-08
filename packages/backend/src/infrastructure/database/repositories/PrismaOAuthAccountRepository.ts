@@ -5,7 +5,7 @@ import {
   ICreateOAuthAccountData,
   IUpdateOAuthAccountData,
   OAuthProvider,
-} from '@ai-onboarding/shared';
+} from '@/domain/models';
 import { prisma } from '../prisma';
 
 @injectable()

@@ -3,10 +3,8 @@ import {
   IOAuthAccountRepository,
   IUserRepository,
 } from '@/domain/repositories';
-
-import { IUserPublic } from '@/domain/models';
+import { IUserPublic, IOAuthAccount } from '@/domain/models';
 import { Errors, JwtService } from '@/domain';
-import { IOAuthAccount } from '@ai-onboarding/shared';
 
 export interface GetCurrentUserOutput {
   user: IUserPublic;

@@ -3,7 +3,7 @@ import {
   ICreateOAuthAccountData,
   IUpdateOAuthAccountData,
   OAuthProvider,
-} from '@ai-onboarding/shared';
+} from '@/domain/models';
 
 export interface IOAuthAccountRepository {
   findById(id: string): Promise<IOAuthAccount | null>;

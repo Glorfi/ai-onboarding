@@ -6,16 +6,31 @@ import {
   GetCrawlStatusUseCase,
   RecrawlSiteUseCase,
   GetUserSitesUseCase,
+  GetSiteApiKeyUseCase,
   DeleteSiteUseCase,
 } from '@/application/use-cases/site';
+import { createSiteInputSchema } from '@ai-onboarding/shared';
+import {
+  toSiteWithApiKeyDTO,
+  toCrawlStatusResponse,
+} from '@/interfaces/mappers';
+import type {
+  ICreateSiteResponse,
+  IGetUserSitesResponse,
+  ICrawlStatusResponse,
+} from '@ai-onboarding/shared';
 
 export class SiteController {
   static async create(req: IAuthRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.userId!;
+      const validated = createSiteInputSchema.parse(req.body);
       const useCase = container.resolve(CreateSiteUseCase);
-      const result = await useCase.execute(userId, req.body);
-      res.status(201).json(result);
+      const { site, apiKey } = await useCase.execute(userId, validated);
+      const response: ICreateSiteResponse = {
+        site: toSiteWithApiKeyDTO(site, apiKey),
+      };
+      res.status(201).json(response);
     } catch (error) {
       next(error);
     }
@@ -24,9 +39,19 @@ export class SiteController {
   static async getUserSites(req: IAuthRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.userId!;
-      const useCase = container.resolve(GetUserSitesUseCase);
-      const result = await useCase.execute(userId);
-      res.json(result);
+      const sitesUseCase = container.resolve(GetUserSitesUseCase);
+      const apiKeyUseCase = container.resolve(GetSiteApiKeyUseCase);
+
+      const { sites } = await sitesUseCase.execute(userId);
+      const sitesWithKeys = await Promise.all(
+        sites.map(async (site) => {
+          const { apiKey } = await apiKeyUseCase.execute(site.id);
+          return toSiteWithApiKeyDTO(site, apiKey);
+        }),
+      );
+
+      const response: IGetUserSitesResponse = { sites: sitesWithKeys };
+      res.json(response);
     } catch (error) {
       next(error);
     }
@@ -37,8 +62,9 @@ export class SiteController {
       const userId = req.userId!;
       const siteId = req.params.id as string;
       const useCase = container.resolve(GetCrawlStatusUseCase);
-      const result = await useCase.execute(userId, siteId);
-      res.json(result);
+      const { site, progress } = await useCase.execute(userId, siteId);
+      const response: ICrawlStatusResponse = toCrawlStatusResponse(site, progress);
+      res.json(response);
     } catch (error) {
       next(error);
     }

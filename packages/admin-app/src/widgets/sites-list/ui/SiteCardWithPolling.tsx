@@ -1,13 +1,23 @@
-import { CrawlProgress, SiteCard, useGetCrawlStatusQuery, useGetMySitesQuery } from '@/entities/site';
+import ApiKeyBlocks from '@/entities/api-key/ui/ApiKey';
+import {
+  CrawlProgress,
+  SiteCard,
+  useGetCrawlStatusQuery,
+  useGetMySitesQuery,
+} from '@/entities/site';
 import { DeleteSiteDialog } from '@/features/site/delete';
 import { RecrawlButton } from '@/features/site/recrawl';
 import { Button } from '@/shared/ui';
-import type { ISite, SiteStatus } from '@ai-onboarding/shared';
-import { Trash2 } from 'lucide-react';
+import type {
+  ISiteDTO,
+  ISiteWithApiKeyDTO,
+  SiteStatus,
+} from '@ai-onboarding/shared';
+import { Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface SiteCardWithPollingProps {
-  site: ISite;
+  site: ISiteWithApiKeyDTO;
 }
 
 export default function SiteCardWithPolling(props: SiteCardWithPollingProps) {
@@ -50,13 +60,16 @@ export default function SiteCardWithPolling(props: SiteCardWithPollingProps) {
       }
       actionsSlot={
         <div className="flex gap-2">
+          <Button variant="ghost" size={'icon-sm'}>
+            <Plus />
+          </Button>
           {isActive && <RecrawlButton siteId={site.id} disabled={isCrawling} />}
           <DeleteSiteDialog
             siteId={site.id}
             siteName={site.name || site.domain}
             trigger={
-              <Button variant="ghost" size={"icon-sm"}>
-               <Trash2 />
+              <Button variant="ghost" size={'icon-sm'}>
+                <Trash2 />
               </Button>
             }
           />

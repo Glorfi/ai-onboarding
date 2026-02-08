@@ -10,11 +10,13 @@ import type {
 import type { IRateLimitService } from '@/domain/services/ratelimit';
 import type { IKnowledgeBaseSearchService } from '@/domain/services/knowledge';
 import type { IChatService } from '@/domain/services/chat';
-import {
-  widgetChatRequestSchema,
-  type IWidgetChatRequest,
-  type IChatResult,
-} from '@ai-onboarding/shared';
+import type { IProcessChatMessageOutput } from '@/interfaces/mappers/widgetMapper';
+
+export interface IProcessChatMessageInput {
+  sessionId: string;
+  message: string;
+  userEmail?: string;
+}
 
 @injectable()
 export class ProcessChatMessageUseCase {
@@ -34,84 +36,81 @@ export class ProcessChatMessageUseCase {
 
   async execute(
     siteId: string,
-    input: IWidgetChatRequest,
+    input: IProcessChatMessageInput,
     ipAddress: string,
     requestDomain: string,
-  ): Promise<IChatResult> {
+  ): Promise<IProcessChatMessageOutput> {
     const startTime = Date.now();
 
-    // 1. Validate input
-    const validated = widgetChatRequestSchema.parse(input);
-
-    // 2. Get site and validate domain
+    // 1. Get site and validate domain
     const site = await this.siteRepo.findById(siteId);
     if (!site) throw Errors.siteNotFound();
 
     // this.validateDomain(requestDomain, site.url);
 
-    // // 3. Check rate limits
-    // await this.checkRateLimits(validated.sessionId, site.id, ipAddress);
+    // // 2. Check rate limits
+    // await this.checkRateLimits(input.sessionId, site.id, ipAddress);
 
-    // 4. Upsert session
+    // 3. Upsert session
     await this.upsertSession(
-      validated.sessionId,
+      input.sessionId,
       site.id,
       ipAddress,
-      validated.userEmail,
+      input.userEmail,
     );
 
-    // 5. Search knowledge base
+    // 4. Search knowledge base
     const searchResult = await this.searchService.search(
       site.id,
-      validated.message,
+      input.message,
       site.similarityThreshold,
     );
 
-    // 6. Handle no answer from knowledge base
+    // 5. Handle no answer from knowledge base
     if (!searchResult.hasAnswer) {
       return this.handleUnanswered(
         site.id,
-        validated.sessionId,
-        validated.userEmail,
-        validated.message,
+        input.sessionId,
+        input.userEmail,
+        input.message,
         searchResult.bestScore,
         ipAddress,
         startTime,
       );
     }
 
-    // 7. Generate AI response
+    // 6. Generate AI response
     const chatResponse = await this.chatService.generateResponse(
-      validated.message,
+      input.message,
       searchResult.chunks,
       site.allowGeneralKnowledge,
       site.name,
     );
 
-    // 8. If AI cannot provide answer
+    // 7. If AI cannot provide answer
     if (chatResponse.response === 'noAnswer') {
       return this.handleUnanswered(
         site.id,
-        validated.sessionId,
-        validated.userEmail,
-        validated.message,
+        input.sessionId,
+        input.userEmail,
+        input.message,
         searchResult.bestScore,
         ipAddress,
         startTime,
       );
     }
 
-    // 9. Save chat message
+    // 8. Save chat message
     const chatMessage = await this.chatMessageRepo.create({
       siteId: site.id,
-      sessionId: validated.sessionId,
-      message: validated.message,
+      sessionId: input.sessionId,
+      message: input.message,
       response: chatResponse.response,
       responseTimeMs: Date.now() - startTime,
     });
 
-    // 10. Increment rate limit counters
-    await this.incrementLimits(validated.sessionId, siteId, ipAddress);
+    // 9. Increment rate limit counters
+    await this.incrementLimits(input.sessionId, siteId, ipAddress);
 
     return {
       response: chatResponse.response,
@@ -194,7 +193,7 @@ export class ProcessChatMessageUseCase {
     bestScore: number,
     ipAddress: string,
     startTime: number,
-  ): Promise<IChatResult> {
+  ): Promise<IProcessChatMessageOutput> {
     const unansweredQuestion = await this.unansweredRepo.create({
       siteId,
       sessionId,

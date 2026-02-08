@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
 import { OAuthService } from '@/infrastructure/oauth';
-import { OAuthProvider } from '@ai-onboarding/shared';
+import { OAuthProvider } from '@/domain/models';
 
 export interface IGetOAuthUrlInput {
   provider: OAuthProvider;

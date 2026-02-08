@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import { IOAuthProvider, IOAuthTokens } from '@/domain/services/oauth/IOAuthProvider';
-import { IOAuthUserProfile, OAuthProvider } from '@ai-onboarding/shared';
+import { IOAuthUserProfile, OAuthProvider } from '@/domain/models';
 import { Errors } from '@/domain/errors';
 
 interface GoogleTokenResponse {

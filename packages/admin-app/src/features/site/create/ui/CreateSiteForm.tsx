@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { ICreateSiteRequest } from '@ai-onboarding/shared';
+import type { ICreateSiteInput } from '@ai-onboarding/shared';
 import { createSiteInputSchema } from '@ai-onboarding/shared';
 import { Button, Input, Label } from '@/shared/ui';
 
 interface CreateSiteFormProps {
-  onSubmit: (data: ICreateSiteRequest) => void;
+  onSubmit: (data: ICreateSiteInput) => void;
   isLoading?: boolean;
 }
 
@@ -19,7 +19,7 @@ export function CreateSiteForm({ onSubmit, isLoading }: CreateSiteFormProps) {
     formState: { errors },
     setValue,
     watch,
-  } = useForm<ICreateSiteRequest>({
+  } = useForm<ICreateSiteInput>({
     resolver: zodResolver(createSiteInputSchema),
     defaultValues: {
       url: '',

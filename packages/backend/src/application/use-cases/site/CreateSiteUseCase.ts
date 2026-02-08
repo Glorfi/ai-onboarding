@@ -4,8 +4,13 @@ import { ISiteRepository, IApiKeyRepository } from '@/domain/repositories';
 import { ICrawlStatusService } from '@/domain/services/cache';
 import { ISite, IApiKey } from '@/domain/models';
 import { Errors } from '@/domain/errors';
-import { createSiteInputSchema, ICreateSiteInput } from '@ai-onboarding/shared';
 import { crawlQueue } from '@/infrastructure/jobs/queue';
+
+export interface ICreateSiteUseCaseInput {
+  url: string;
+  additionalUrls?: string[];
+  name?: string;
+}
 
 export interface ICreateSiteOutput {
   site: ISite;
@@ -24,11 +29,9 @@ export class CreateSiteUseCase {
     @inject('ICrawlStatusService') private statusService: ICrawlStatusService
   ) {}
 
-  async execute(userId: string, input: ICreateSiteInput): Promise<ICreateSiteOutput> {
-    const validated = createSiteInputSchema.parse(input);
-
+  async execute(userId: string, input: ICreateSiteUseCaseInput): Promise<ICreateSiteOutput> {
     // Extract domain from URL
-    const urlObj = new URL(validated.url);
+    const urlObj = new URL(input.url);
     const domain = urlObj.hostname;
 
     const existingSite = await this.siteRepo.findByDomain(domain);
@@ -40,14 +43,14 @@ export class CreateSiteUseCase {
     // Create site with pending status
     const site = await this.siteRepo.create({
       userId,
-      url: validated.url,
+      url: input.url,
       domain,
-      name: validated.name || domain,
-      additionalUrls: validated.additionalUrls,
+      name: input.name || domain,
+      additionalUrls: input.additionalUrls,
     });
 
     // Prepare URLs for crawling
-    const urlsToCrawl = [validated.url, ...(validated.additionalUrls || [])];
+    const urlsToCrawl = [input.url, ...(input.additionalUrls || [])];
 
     // Enqueue crawl job
     await crawlQueue.add(

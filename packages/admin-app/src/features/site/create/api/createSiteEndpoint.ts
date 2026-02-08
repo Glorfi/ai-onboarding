@@ -1,10 +1,10 @@
 import { mainApi } from '@/shared/api';
 import { API_PATHS } from '@/shared/config';
-import type { ICreateSiteRequest, ICreateSiteResponse } from '@ai-onboarding/shared';
+import type { ICreateSiteInput, ICreateSiteResponse } from '@ai-onboarding/shared';
 
 export const createSiteApi = mainApi.injectEndpoints({
   endpoints: (build) => ({
-    createSite: build.mutation<ICreateSiteResponse, ICreateSiteRequest>({
+    createSite: build.mutation<ICreateSiteResponse, ICreateSiteInput>({
       query: (body) => ({
         url: API_PATHS.SITES,
         method: 'POST',

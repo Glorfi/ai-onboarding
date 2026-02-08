@@ -1,11 +1,12 @@
 import { injectable, inject } from 'tsyringe';
 import { Errors } from '@/domain/errors';
 import type { IUnansweredQuestionRepository } from '@/domain/repositories';
-import {
-  widgetEmailRequestSchema,
-  type IWidgetEmailRequest,
-  type ISaveEmailOutput,
-} from '@ai-onboarding/shared';
+import type { ISaveEmailOutput } from '@/interfaces/mappers/widgetMapper';
+
+export interface ISaveEmailInput {
+  questionId: string;
+  email: string;
+}
 
 @injectable()
 export class SaveEmailForUnansweredUseCase {
@@ -16,23 +17,20 @@ export class SaveEmailForUnansweredUseCase {
 
   async execute(
     siteId: string,
-    input: IWidgetEmailRequest
+    input: ISaveEmailInput
   ): Promise<ISaveEmailOutput> {
-    // 1. Validate input (API key already validated in middleware)
-    const validated = widgetEmailRequestSchema.parse(input);
-
-    // 2. Find the question
-    const question = await this.unansweredRepo.findById(validated.questionId);
+    // 1. Find the question
+    const question = await this.unansweredRepo.findById(input.questionId);
     if (!question) throw Errors.widgetQuestionNotFound();
 
-    // 3. Verify question belongs to the site
+    // 2. Verify question belongs to the site
     if (question.siteId !== siteId) {
       throw Errors.widgetQuestionNotFound();
     }
 
-    // 4. Update with email
-    await this.unansweredRepo.update(validated.questionId, {
-      userEmail: validated.email,
+    // 3. Update with email
+    await this.unansweredRepo.update(input.questionId, {
+      userEmail: input.email,
     });
 
     return {

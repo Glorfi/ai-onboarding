@@ -9,7 +9,7 @@ import {
 } from '@/application/use-cases/oauth';
 import { JwtService } from '@/domain/services';
 import { OAuthStateService } from '@/infrastructure/oauth/OAuthStateService';
-import { OAuthProvider } from '@ai-onboarding/shared';
+import { OAuthProvider } from '@/domain/models';
 import { IAuthRequest } from '@/infrastructure/http/middlewares/authMiddleware';
 
 function parseProvider(provider: string): OAuthProvider {

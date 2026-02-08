@@ -1,6 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { v4 as uuid } from 'uuid';
-import { DEFAULTS, type ICrawlProgress } from '@ai-onboarding/shared';
+import type { ICrawlProgress } from '@/domain/models';
+import { DEFAULTS } from '@ai-onboarding/shared';
 import type {
   ISiteRepository,
   IKnowledgeBaseRepository,

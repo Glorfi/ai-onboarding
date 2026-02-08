@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { ICreateSiteRequest } from '@ai-onboarding/shared';
+import type { ICreateSiteInput } from '@ai-onboarding/shared';
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ export function CreateSiteDialog({ trigger }: CreateSiteDialogProps) {
   const [createSite, { isLoading }] = useCreateSiteMutation();
   const { toast } = useReduxToast();
 
-  const handleSubmit = async (data: ICreateSiteRequest) => {
+  const handleSubmit = async (data: ICreateSiteInput) => {
     try {
       await createSite(data).unwrap();
       toast({

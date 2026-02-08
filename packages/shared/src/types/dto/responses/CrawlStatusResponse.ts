@@ -1,22 +1,24 @@
-import type { SiteStatus } from '../../entities/Site';
+import { SITE_STATUS } from '../../../constants';
 
-export interface ICrawlError {
+type SiteStatus = (typeof SITE_STATUS)[keyof typeof SITE_STATUS];
+
+export interface ICrawlErrorDTO {
   url: string;
   message: string;
 }
 
-export interface ICrawlProgress {
+export interface ICrawlProgressDTO {
   pagesDiscovered: number;
   pagesCrawled: number;
   pagesProcessed: number;
   currentUrl?: string;
-  errors: ICrawlError[];
+  errors: ICrawlErrorDTO[];
 }
 
 export interface ICrawlStatusResponse {
   siteId: string;
   status: SiteStatus;
-  progress: ICrawlProgress;
+  progress: ICrawlProgressDTO;
   startedAt?: Date;
   completedAt?: Date;
   errorMessage?: string;

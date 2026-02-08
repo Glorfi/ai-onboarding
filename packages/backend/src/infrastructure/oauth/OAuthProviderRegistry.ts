@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import { IOAuthProvider } from '@/domain/services/oauth/IOAuthProvider';
-import { OAuthProvider } from '@ai-onboarding/shared';
+import { OAuthProvider } from '@/domain/models';
 import { Errors } from '@/domain/errors';
 
 @injectable()
