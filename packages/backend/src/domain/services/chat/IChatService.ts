@@ -1,5 +1,10 @@
 import type { IKnowledgeChunk } from '../knowledge';
 
+export interface IChatHistoryMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface IChatResponse {
   response: string;
   sources: Array<{ pageUrl: string; title?: string }>;
@@ -11,6 +16,7 @@ export interface IChatService {
     question: string,
     chunks: IKnowledgeChunk[],
     allowGeneralKnowledge: boolean,
-    siteName?: string
+    siteName?: string,
+    chatHistory?: IChatHistoryMessage[]
   ): Promise<IChatResponse>;
 }

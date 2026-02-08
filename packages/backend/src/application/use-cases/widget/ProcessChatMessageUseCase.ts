@@ -9,7 +9,10 @@ import type {
 } from '@/domain/repositories';
 import type { IRateLimitService } from '@/domain/services/ratelimit';
 import type { IKnowledgeBaseSearchService } from '@/domain/services/knowledge';
-import type { IChatService } from '@/domain/services/chat';
+import type {
+  IChatService,
+  IChatHistoryMessage,
+} from '@/domain/services/chat';
 import type { IProcessChatMessageOutput } from '@/interfaces/mappers/widgetMapper';
 
 export interface IProcessChatMessageInput {
@@ -46,10 +49,10 @@ export class ProcessChatMessageUseCase {
     const site = await this.siteRepo.findById(siteId);
     if (!site) throw Errors.siteNotFound();
 
-    // this.validateDomain(requestDomain, site.url);
+    this.validateDomain(requestDomain, site.url);
 
     // // 2. Check rate limits
-    // await this.checkRateLimits(input.sessionId, site.id, ipAddress);
+    await this.checkRateLimits(input.sessionId, site.id, ipAddress);
 
     // 3. Upsert session
     await this.upsertSession(
@@ -59,10 +62,15 @@ export class ProcessChatMessageUseCase {
       input.userEmail,
     );
 
-    // 4. Search knowledge base
+    // 4. Search knowledge base with site context
+    const siteContext = site.name || site.domain;
+    const enrichedQuery = this.enrichQueryWithSiteContext(
+      input.message,
+      siteContext,
+    );
     const searchResult = await this.searchService.search(
       site.id,
-      input.message,
+      enrichedQuery,
       site.similarityThreshold,
     );
 
@@ -79,15 +87,27 @@ export class ProcessChatMessageUseCase {
       );
     }
 
-    // 6. Generate AI response
+    // 6. Get chat history for context
+    const previousMessages = await this.chatMessageRepo.findBySessionId(
+      input.sessionId,
+    );
+    const chatHistory: IChatHistoryMessage[] = previousMessages.flatMap(
+      (msg) => [
+        { role: 'user' as const, content: msg.message },
+        { role: 'assistant' as const, content: msg.response },
+      ],
+    );
+
+    // 7. Generate AI response
     const chatResponse = await this.chatService.generateResponse(
       input.message,
       searchResult.chunks,
       site.allowGeneralKnowledge,
-      site.name,
+      siteContext,
+      chatHistory,
     );
 
-    // 7. If AI cannot provide answer
+    // 8. If AI cannot provide answer
     if (chatResponse.response === 'noAnswer') {
       return this.handleUnanswered(
         site.id,
@@ -100,7 +120,7 @@ export class ProcessChatMessageUseCase {
       );
     }
 
-    // 8. Save chat message
+    // 9. Save chat message
     const chatMessage = await this.chatMessageRepo.create({
       siteId: site.id,
       sessionId: input.sessionId,
@@ -109,7 +129,7 @@ export class ProcessChatMessageUseCase {
       responseTimeMs: Date.now() - startTime,
     });
 
-    // 9. Increment rate limit counters
+    // 10. Increment rate limit counters
     await this.incrementLimits(input.sessionId, siteId, ipAddress);
 
     return {
@@ -183,6 +203,10 @@ export class ProcessChatMessageUseCase {
     await this.rateLimitService.incrementSession(sessionId, siteId);
     await this.rateLimitService.incrementIp(ipAddress);
     await this.sessionRepo.incrementMessageCount(sessionId);
+  }
+
+  private enrichQueryWithSiteContext(query: string, siteName: string): string {
+    return `${siteName}: ${query}`;
   }
 
   private async handleUnanswered(

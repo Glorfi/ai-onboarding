@@ -9,7 +9,7 @@ export default function SitesPage() {
         <div>
           <h1 className="text-3xl font-bold">My Sites</h1>
           <p className="text-muted-foreground mt-1">
-            Manage your websites and their crawling status
+            Add sites, view crawl status, manage your site knowledge bases and configure your chat bots
           </p>
         </div>
         <CreateSiteDialog trigger={<Button size="lg">Add New Site</Button>} />

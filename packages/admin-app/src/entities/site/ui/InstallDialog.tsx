@@ -325,7 +325,7 @@ export const InstallDialog = (props: IInstallDialog) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button>Install</Button>
+        <Button>Install ChatBot</Button>
       </DialogTrigger>
 
       <DialogContent className="max-h-[85vh] min-md:min-w-3xl flex flex-col">

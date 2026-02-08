@@ -35,6 +35,7 @@
     "react-hook-form": "^7.71.1",
     "react-redux": "^9.2.0",
     "react-router": "^7.13.0",
+    "rollup-plugin-visualizer": "^6.0.5",
     "steiger": "^0.5.11",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.18",

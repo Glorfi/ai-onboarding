@@ -45,7 +45,7 @@ export function CreateSiteDialog({ trigger }: CreateSiteDialogProps) {
         <DialogHeader>
           <DialogTitle>Add New Site</DialogTitle>
           <DialogDescription>
-            Enter the URL of the website you want to crawl and index.
+            Enter your site details to start crawling and create a chatbot.
           </DialogDescription>
         </DialogHeader>
         <CreateSiteForm onSubmit={handleSubmit} isLoading={isLoading} />

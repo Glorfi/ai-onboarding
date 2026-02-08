@@ -15,10 +15,7 @@ import {
 } from '@/shared/ui';
 import { Link, useNavigate } from 'react-router';
 import { useSignInMutation } from '../api';
-import {
-  signInInputSchema,
-  type IPasswordSignInRequest,
-} from '@ai-onboarding/shared';
+import { signInInputSchema, type ISignInInput } from '@ai-onboarding/shared';
 import { getErrorMessage } from '@/shared/lib';
 import { useEffect } from 'react';
 
@@ -31,12 +28,12 @@ export default function AuthPasswordSignInPage() {
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<IPasswordSignInRequest>({
+  } = useForm<ISignInInput>({
     resolver: zodResolver(signInInputSchema),
     reValidateMode: 'onChange',
   });
 
-  async function onSubmit(payload: IPasswordSignInRequest) {
+  async function onSubmit(payload: ISignInInput) {
     await signIn(payload).unwrap();
   }
 

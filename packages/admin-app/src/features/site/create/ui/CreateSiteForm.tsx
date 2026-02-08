@@ -3,7 +3,15 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { ICreateSiteInput } from '@ai-onboarding/shared';
 import { createSiteInputSchema } from '@ai-onboarding/shared';
-import { Button, Input, Label } from '@/shared/ui';
+import {
+  Button,
+  Input,
+  Label,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/shared/ui';
+import { CircleQuestionMark } from 'lucide-react';
 
 interface CreateSiteFormProps {
   onSubmit: (data: ICreateSiteInput) => void;
@@ -45,14 +53,28 @@ export function CreateSiteForm({ onSubmit, isLoading }: CreateSiteFormProps) {
   const removeAdditionalUrl = (index: number) => {
     setValue(
       'additionalUrls',
-      additionalUrls.filter((_, i) => i !== index)
+      additionalUrls.filter((_, i) => i !== index),
     );
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <div className="space-y-2">
-        <Label htmlFor="url">Website URL *</Label>
+        <div className="flex space-x-2">
+          <Label htmlFor="url">Website URL *</Label>
+
+          <Tooltip>
+            <TooltipTrigger tabIndex={-1}>
+              <CircleQuestionMark className="size-4" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                Where the chatbot will be installed. Crawling starts from here.
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
         <Input
           id="url"
           type="url"
@@ -65,7 +87,17 @@ export function CreateSiteForm({ onSubmit, isLoading }: CreateSiteFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="name">Site Name (optional)</Label>
+        <div className="flex space-x-2">
+          <Label htmlFor="name">Site Name (optional)</Label>
+          <Tooltip>
+            <TooltipTrigger tabIndex={-1}>
+              <CircleQuestionMark className="size-4" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>A name to identify this site in your dashboard.</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
         <Input id="name" placeholder="My Website" {...register('name')} />
         {errors.name && (
           <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -73,7 +105,17 @@ export function CreateSiteForm({ onSubmit, isLoading }: CreateSiteFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Additional URLs (max 5)</Label>
+        <div className="flex space-x-2">
+          <Label>Additional URLs (max 5)</Label>{' '}
+          <Tooltip>
+            <TooltipTrigger tabIndex={-1}>
+              <CircleQuestionMark className="size-4" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Extra pages to include in the knowledge base (max 5).</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
         <div className="flex gap-2">
           <Input
             type="url"

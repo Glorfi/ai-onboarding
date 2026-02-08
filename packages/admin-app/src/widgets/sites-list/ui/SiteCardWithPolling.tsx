@@ -60,9 +60,9 @@ export default function SiteCardWithPolling(props: SiteCardWithPollingProps) {
       }
       actionsSlot={
         <div className="flex gap-2">
-          <Button variant="ghost" size={'icon-sm'}>
+          {/* <Button variant="ghost" size={'icon-sm'}>
             <Plus />
-          </Button>
+          </Button> */}
           {isActive && <RecrawlButton siteId={site.id} disabled={isCrawling} />}
           <DeleteSiteDialog
             siteId={site.id}

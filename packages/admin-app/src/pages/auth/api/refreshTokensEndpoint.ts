@@ -1,9 +1,6 @@
 import { mainApi } from '@/shared/api';
 import { API_PATHS } from '@/shared/config';
-import type {
-  IPasswordSignInRequest,
-  IPasswordSignInResponse,
-} from '@ai-onboarding/shared';
+import type { IPasswordSignInResponse } from '@ai-onboarding/shared';
 
 export const signInApi = mainApi.injectEndpoints({
   endpoints: (build) => ({

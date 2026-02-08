@@ -1,26 +1,36 @@
 import { injectable } from 'tsyringe';
 import OpenAI from 'openai';
-import type { IChatService, IChatResponse } from '@/domain/services/chat';
+import type {
+  IChatService,
+  IChatResponse,
+  IChatHistoryMessage,
+} from '@/domain/services/chat';
 import type { IKnowledgeChunk } from '@/domain/services/knowledge';
 
 const CHAT_MODEL = 'gpt-4o-mini';
 const TEMPERATURE = 0.3;
 const MAX_TOKENS = 500;
 
-const SYSTEM_PROMPT_KNOWLEDGE_ONLY = `You are a helpful customer support assistant. Answer questions ONLY using the provided knowledge base context. If context does not have the answer, return exactly: "noAnswer"
+const buildSystemPromptKnowledgeOnly = (siteName: string) =>
+  `You are a helpful customer support assistant for ${siteName}. Answer questions ONLY using the provided knowledge base context. If context does not have the answer, return exactly: "noAnswer"
 Do not write anything else.
+
+When users ask about "this product", "it", "your service", or similar references - they are asking about ${siteName}.
 
 Rules:
 1. If the context contains the answer, provide a clear, concise response
 2. Never make up information or use general knowledge
 3. Keep responses under 300 words
 4. Be friendly and professional
-5. Speak as you're a customer support representative of this company.
+5. Speak as you're a customer support representative of ${siteName}.
 `;
 
-const SYSTEM_PROMPT_WITH_GENERAL = `You are a helpful customer support assistant. Answer questions using the provided knowledge base context. If the context doesn't contain the answer but you have relevant general knowledge, you may use it BUT you MUST prefix your response with:
+const buildSystemPromptWithGeneral = (siteName: string) =>
+  `You are a helpful customer support assistant for ${siteName}. Answer questions using the provided knowledge base context. If the context doesn't contain the answer but you have relevant general knowledge, you may use it BUT you MUST prefix your response with:
 
-"Based on general knowledge (not specific to this product): "
+"Based on general knowledge (not specific to ${siteName}): "
+
+When users ask about "this product", "it", "your service", or similar references - they are asking about ${siteName}.
 
 Rules:
 1. Always prioritize knowledge base context
@@ -43,11 +53,13 @@ export class OpenAIChatService implements IChatService {
     question: string,
     chunks: IKnowledgeChunk[],
     allowGeneralKnowledge: boolean,
-    _siteName?: string,
+    siteName?: string,
+    chatHistory?: IChatHistoryMessage[],
   ): Promise<IChatResponse> {
+    const siteContext = siteName || 'this product';
     const systemPrompt = allowGeneralKnowledge
-      ? SYSTEM_PROMPT_WITH_GENERAL
-      : SYSTEM_PROMPT_KNOWLEDGE_ONLY;
+      ? buildSystemPromptWithGeneral(siteContext)
+      : buildSystemPromptKnowledgeOnly(siteContext);
 
     const context = chunks
       .map(
@@ -57,12 +69,24 @@ export class OpenAIChatService implements IChatService {
 
     const userMessage = `Context:\n${context}\n\nQuestion: ${question}`;
 
+    // Build messages array with chat history for context
+    const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+      { role: 'system', content: systemPrompt },
+    ];
+
+    // Add recent chat history (limit to last 6 messages to control token usage)
+    if (chatHistory && chatHistory.length > 0) {
+      const recentHistory = chatHistory.slice(-6);
+      for (const msg of recentHistory) {
+        messages.push({ role: msg.role, content: msg.content });
+      }
+    }
+
+    messages.push({ role: 'user', content: userMessage });
+
     const response = await this.client.chat.completions.create({
       model: CHAT_MODEL,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
+      messages,
       temperature: TEMPERATURE,
       max_tokens: MAX_TOKENS,
     });

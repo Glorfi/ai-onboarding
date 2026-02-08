@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -12,6 +13,12 @@ export default defineConfig({
       },
     }),
     tailwindcss(),
+    visualizer({
+      filename: './bundle-stats.html',
+      open: false,
+      gzipSize: true,
+      brotliSize: true,
+    }),
   ],
   server: {
     port: 5171,
@@ -23,6 +30,20 @@ export default defineConfig({
         cookieDomainRewrite: 'localhost',
         timeout: 30000, // 30 seconds
         proxyTimeout: 30000,
+      },
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('zod')) {
+            return 'zod';
+          }
+          if (id.includes('radix-ui')) {
+            return 'radix-ui';
+          }
+        },
       },
     },
   },
